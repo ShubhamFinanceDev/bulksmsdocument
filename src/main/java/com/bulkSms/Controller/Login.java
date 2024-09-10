@@ -69,10 +69,7 @@ public class Login {
 
     }
 
-    @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
-        return service.fetchPdf(pdfUrl);
-    }
+
     @PostMapping("/csvUpload")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();

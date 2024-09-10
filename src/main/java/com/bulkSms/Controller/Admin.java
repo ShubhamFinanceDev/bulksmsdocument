@@ -11,16 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/admin")
 public class Admin {
     @Autowired
     private Service service;
-
-    @PostMapping("/message")
-    public ResponseEntity<String> postMessage() {
-        return ResponseEntity.ok("Message received by admin successfully!");
-    }
 
 
     @PostMapping("/register")
@@ -38,6 +35,11 @@ public class Admin {
         catch (Exception e) {
             throw new Exception(e.getMessage());
         }
+    }
+
+    @GetMapping("/fetch-pdf")
+    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
+        return service.fetchPdf(pdfUrl);
     }
 
 }
