@@ -69,11 +69,6 @@ public class Login {
 
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public String exceptionHandler() {
-        return "Credentials Invalid !!";
-    }
-
     @GetMapping("/fetch-pdf")
     public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
         return service.fetchPdf(pdfUrl);
