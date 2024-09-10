@@ -68,16 +68,4 @@ public class Login {
         }
 
     }
-
-
-    @PostMapping("/csvUpload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
-        CommonResponse commonResponse = new CommonResponse();
-        try {
-            return ResponseEntity.ok(service.save(file).getBody());
-        } catch (Exception e) {
-            commonResponse.setMsg("Technical issue : " + e.getMessage());
-            return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 }

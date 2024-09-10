@@ -37,6 +37,17 @@ public class Admin {
         }
     }
 
+    @PostMapping("/csvUpload")
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            return ResponseEntity.ok(service.save(file).getBody());
+        } catch (Exception e) {
+            commonResponse.setMsg("Technical issue : " + e.getMessage());
+            return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/fetch-pdf")
     public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
         return service.fetchPdf(pdfUrl);
