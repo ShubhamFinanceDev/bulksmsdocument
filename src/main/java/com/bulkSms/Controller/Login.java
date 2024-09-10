@@ -83,19 +83,4 @@ public class Login {
             return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody @Valid RegistrationDetails registerUserDetails, BindingResult bindingResult) {
-
-        if (bindingResult.hasErrors()) {
-            return new ResponseEntity<>(bindingResult.getAllErrors(), HttpStatus.BAD_REQUEST);
-        }
-        try {
-            service.registerNewUser(registerUserDetails);
-            return new ResponseEntity<>("User Registered successfully", HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-
-        }
-    }
 }
