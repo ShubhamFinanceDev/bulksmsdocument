@@ -56,6 +56,12 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
 
         return new ResponseEntity<>(commonResponse, HttpStatus.NOT_FOUND);
     }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<CommonResponse> handleGlobalException(IllegalArgumentException ex) {
+        logger.error(ex.getMessage());
+        commonResponse.setMsg(ex.getMessage());
+        return new ResponseEntity<>(commonResponse, HttpStatus.BAD_REQUEST);
+    }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
