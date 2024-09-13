@@ -1,20 +1,25 @@
 package com.bulkSms.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "bulksms")
+@Table(name = "bulk_sms")
 @Data
 public class BulkSms {
-    @jakarta.persistence.Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    @Column(name="id")
-    private Long  Id;
-    @Column(name="loan_number")
-    private String loanNumber;
-    @Column(name="mobile_number")
-    private String mobileNumber;
-    @Column(name = "Certificate_Category")
-    private String certificateCategory;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "user_id")
+    private long userId;
+
+    @Column(name = "sms_timeStamp")
+    private LocalDateTime smsTimeStamp;
+
+    @JsonIgnore
+    @JoinColumn(name = "id")
+    @OneToOne
+    private DataUpload dataUpload;
 }

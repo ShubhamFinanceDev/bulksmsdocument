@@ -2,15 +2,18 @@ package com.bulkSms.ServiceImpl;
 
 
 import com.bulkSms.Entity.BulkSms;
+import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Repository.BulkRepository;
+import com.bulkSms.Repository.DataUploadRepo;
 import com.bulkSms.Repository.UserDetailRepo;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
+import com.bulkSms.Utility.SmsUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -22,7 +25,11 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -39,6 +46,12 @@ public class ServiceImpl implements Service {
     private UserDetailRepo userDetailRepo;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private BulkRepository bulkSmsRepo;
+    @Autowired
+    private SmsUtility smsUtility;
+    @Autowired
+    private DataUploadRepo dataUploadRepo;
 
     public ResponseEntity<CommonResponse> fetchPdf(String folderPath) {
         CommonResponse commonResponse = new CommonResponse();
@@ -114,5 +127,52 @@ public class ServiceImpl implements Service {
         userDetailRepo.save(userDetails);
 
         registerUserDetails.setRole(role.getRole());
+    }
+
+    @Override
+    public List<Object> sendSmsToUser(String smsCategory) throws Exception {
+        List<Object> list = new ArrayList<>();
+        LocalDateTime timestamp = LocalDateTime.now();
+        Map<Object, Object> map = new HashMap<>();
+        List<BulkSms> bulkSmsList = new ArrayList<>();
+
+        try {
+            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategory(smsCategory);
+            if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
+                for (DataUpload smsSendDetails : smsCategoryDetails) {
+
+                    String smsFlag = smsSendDetails.getSmsFlag().toUpperCase();
+
+                    if (smsFlag.equals("N")) {
+
+                        smsUtility.sendTextMsgToUser(smsSendDetails);
+
+                        BulkSms bulkSms = new BulkSms();
+                        bulkSms.setSmsTimeStamp(timestamp);
+                        bulkSms.setDataUpload(smsSendDetails);
+                        bulkSmsList.add(bulkSms);
+
+                        smsSendDetails.setSmsFlag("Y");
+                        dataUploadRepo.save(smsSendDetails);
+
+                        map.put("Loan Number", smsSendDetails.getLoanNumber());
+                        map.put("Mobile Number", smsSendDetails.getMobileNumber());
+                        map.put("Timestamp", timestamp);
+                        map.put("Flag", "Y");
+                        list.add(map);
+                    } else {
+                        map.put("Message","Message cannot be send twice on : "+smsSendDetails.getMobileNumber());
+                        list.add(map);
+                    }
+                }
+            }
+            bulkSmsRepo.saveAll(bulkSmsList);
+
+            return list;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e.getMessage());
+        }
     }
 }
