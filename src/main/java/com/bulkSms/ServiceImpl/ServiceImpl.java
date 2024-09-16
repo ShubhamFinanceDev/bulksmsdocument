@@ -151,14 +151,14 @@ public class ServiceImpl implements Service {
                         smsSendDetails.setSmsFlag("Y");
                         dataUploadRepo.save(smsSendDetails);
 
-                        map.put("Loan Number", smsSendDetails.getLoanNumber());
-                        map.put("Mobile Number", smsSendDetails.getMobileNumber());
-                        map.put("Timestamp", timestamp);
-                        map.put("Flag", "Y");
+                        map.put("loanNumber", smsSendDetails.getLoanNumber());
+                        map.put("mobileNumber", smsSendDetails.getMobileNumber());
+                        map.put("timestamp", timestamp);
+                        map.put("flag", "Y");
                         list.add(map);
                     }
                 } else {
-                map.put("Message", "No unsent SMS found for category: " + smsCategory);
+                map.put("msg", "No unsent SMS found for category: " + smsCategory);
                 list.add(map);
             }
             bulkSmsRepo.saveAll(bulkSmsList);

@@ -27,13 +27,12 @@ public class SmsUtility {
     @Value("${sms.sender}")
     private String smsSender;
 
-    public String message = "Dear+Customer,+Congratulations+to+be+part+of+the+Shubham+family,+we+are+pleased+to+share+your+welcome+kit+having+welcome+letter,+repayment+schedule+%26+sanction+letter+cum+MITC.+Kindly+download+your+welcome+kit+from+below+link.+For+any+enquiry+related+to+this,+you+can+call+at+our+customer+care+toll+free+no.+-+1800+258+2225+or+email+at+customercare@shubham.co%0aLink:-https://docs.shubham.co:8443/BulkSMS/downloadadhocCertificate/TGOXfWuqvIz6LaSjyHpGbn7lnrKUa4dScQeBbmSl0mwoJYcbrh";
 
     public void sendTextMsgToUser(DataUpload smsSendDetails) {
         String mobileNumber = smsSendDetails.getMobileNumber();
 
         String url = smsUrl + "?method=" + smsMethod + "&api_key=" + smsKey + "&to=" + mobileNumber +
-                "&sender=" + smsSender + "&message=" + message + "&format=" + smsFormat + "&unicode=auto";
+                "&sender=" + smsSender + "&message=" + SmsTemplate.adhocMessage+smsSendDetails.getLoanNumber() + "&format=" + smsFormat + "&unicode=auto";
 
         System.out.println("Constructed URL: " + url);
 

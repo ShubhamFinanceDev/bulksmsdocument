@@ -31,6 +31,7 @@ public class CsvFileUtility{
                 dataUpload.setLoanNumber(record.get(0));
                 dataUpload.setMobileNumber(record.get(1));
                 dataUpload.setCertificateCategory(record.get(2));
+                dataUpload.setSmsFlag(record.get(3));
                 dataUploadList.add(dataUpload);
             }
         }
