@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
@@ -51,6 +52,17 @@ public class Admin {
     @GetMapping("/fetch-pdf")
     public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
         return service.fetchPdf(pdfUrl);
+    }
+
+    @GetMapping("/sending-sms")
+    public ResponseEntity<?> sendSms(@RequestParam String smsCategory) throws Exception
+    {
+        try {
+            List<Object> smsInformation = service.sendSmsToUser(smsCategory);
+            return new ResponseEntity<>(smsInformation, HttpStatus.OK);
+        }catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
 }
