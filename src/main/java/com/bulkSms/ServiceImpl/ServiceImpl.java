@@ -133,7 +133,6 @@ public class ServiceImpl implements Service {
     public List<Object> sendSmsToUser(String smsCategory) throws Exception {
         List<Object> list = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
-        Map<Object, Object> map = new HashMap<>();
         List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
@@ -151,17 +150,15 @@ public class ServiceImpl implements Service {
                         smsSendDetails.setSmsFlag("Y");
                         dataUploadRepo.save(smsSendDetails);
 
+                        Map<Object, Object> map = new HashMap<>();
                         map.put("loanNumber", smsSendDetails.getLoanNumber());
                         map.put("mobileNumber", smsSendDetails.getMobileNumber());
                         map.put("timestamp", timestamp);
                         map.put("flag", "Y");
                         list.add(map);
                     }
-                } else {
-                map.put("msg", "No unsent SMS found for category: " + smsCategory);
-                list.add(map);
-            }
-            bulkSmsRepo.saveAll(bulkSmsList);
+                bulkSmsRepo.saveAll(bulkSmsList);
+                }
 
             return list;
 

@@ -1,6 +1,7 @@
 package com.bulkSms.Controller;
 
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -59,7 +63,12 @@ public class Admin {
     {
         try {
             List<Object> smsInformation = service.sendSmsToUser(smsCategory);
-            return new ResponseEntity<>(smsInformation, HttpStatus.OK);
+            if(smsInformation.isEmpty()){
+                SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory,smsInformation);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            SmsResponse response = new SmsResponse(smsInformation.size(), "success",smsInformation);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (Exception e) {
             throw new Exception(e.getMessage());
         }
