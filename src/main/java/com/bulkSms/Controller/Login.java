@@ -1,9 +1,14 @@
 package com.bulkSms.Controller;
 
 import com.bulkSms.JwtAuthentication.JwtHelper;
+import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.JwtRequest;
 import com.bulkSms.Model.JwtResponse;
+import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +17,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -26,8 +33,11 @@ public class Login {
     private AuthenticationManager manager;
     @Autowired
     private Service service;
+
     @Autowired
     private JwtHelper helper;
+
+    Logger logger = LoggerFactory.getLogger(Login.class);
 
 
     @PostMapping("/login")
@@ -57,15 +67,5 @@ public class Login {
             throw new BadCredentialsException(" Invalid Username or Password  !!");
         }
 
-    }
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public String exceptionHandler() {
-        return "Credentials Invalid !!";
-    }
-
-    @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
-        return service.fetchPdf(pdfUrl);
     }
 }

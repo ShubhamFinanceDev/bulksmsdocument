@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -29,7 +30,6 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<CommonResponse> handleUserNotFoundException(UsernameNotFoundException ex) {
         logger.error(ex.getMessage());
-        commonResponse.setCode("401");
         commonResponse.setMsg(ex.getMessage());
         return new ResponseEntity<>(commonResponse, HttpStatus.NOT_FOUND);
     }
@@ -38,7 +38,6 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<CommonResponse> handleRuntimeException(RuntimeException ex) {
         logger.error(ex.getMessage());
-        commonResponse.setCode("500");
         commonResponse.setMsg(ex.getMessage());
         return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -46,10 +45,22 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse> handleGlobalException(Exception ex) {
         logger.error(ex.getMessage());
-        commonResponse.setCode("500");
         commonResponse.setMsg(ex.getMessage());
 
         return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<CommonResponse> handleGlobalException(BadCredentialsException ex) {
+        logger.error(ex.getMessage());
+        commonResponse.setMsg(ex.getMessage());
+
+        return new ResponseEntity<>(commonResponse, HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<CommonResponse> handleGlobalException(IllegalArgumentException ex) {
+        logger.error(ex.getMessage());
+        commonResponse.setMsg(ex.getMessage());
+        return new ResponseEntity<>(commonResponse, HttpStatus.BAD_REQUEST);
     }
 
     @Override
@@ -57,7 +68,6 @@ public class AuthEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        commonResponse.setCode(String.valueOf(HttpServletResponse.SC_UNAUTHORIZED));
         commonResponse.setMsg("Access denied.");
         Gson gson = new Gson();
         PrintWriter writer=response.getWriter();
