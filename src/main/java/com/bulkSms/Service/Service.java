@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.IOException;
+import java.util.List;
 
 public interface Service {
     ResponseEntity<?> fetchPdf(String pdfUrl) throws IOException;
@@ -16,4 +17,6 @@ public interface Service {
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
     ResponseEntity<?> fetchPdfFile(String loanNo) throws Exception;
+
+    List<Object> sendSmsToUser(String smsCategory) throws Exception;
 }
