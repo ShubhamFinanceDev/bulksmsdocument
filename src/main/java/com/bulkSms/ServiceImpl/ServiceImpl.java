@@ -96,8 +96,8 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
 
         if (csvFileUtility.hasCsvFormat(file)) {
-            List<BulkSms> bulkSmsList = csvFileUtility.csvBulksms(file.getInputStream());
-            bulkRepository.saveAll(bulkSmsList);
+            List<DataUpload> dataUploadList = csvFileUtility.csvBulksms(file.getInputStream());
+            dataUploadRepo.saveAll(dataUploadList);
             commonResponse.setMsg("Csv file upload successfully");
         } else {
             commonResponse.setMsg("File is not a csv file");
