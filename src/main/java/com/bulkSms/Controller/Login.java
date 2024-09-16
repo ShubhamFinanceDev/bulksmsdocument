@@ -71,13 +71,13 @@ public class Login {
         }
     }
 
-    @GetMapping("/download-pdf")
-    public ResponseEntity<?> downloadPdfFile(@RequestParam(name = "loanNo")String loanNo){
+    @GetMapping("/download-pdf/{loanNo}")
+    public ResponseEntity<?> downloadPdfFile(@PathVariable("loanNo") String loanNo) {
         CommonResponse commonResponse = new CommonResponse();
         String loanNoDecoded = encodingUtils.decode(loanNo);
         System.out.println(loanNoDecoded);
         try {
-            return service.fetchPdfFile(loanNoDecoded);
+            return service.fetchPdfFileForDownload(loanNoDecoded);
         }catch (Exception e){
             commonResponse.setMsg("Exception :" +e.getMessage());
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

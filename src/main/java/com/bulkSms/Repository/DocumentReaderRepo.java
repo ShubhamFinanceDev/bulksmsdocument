@@ -14,4 +14,7 @@ public interface DocumentReaderRepo extends JpaRepository<DocumentReader,Long> {
     @Modifying
     @Query("UPDATE DocumentReader d SET d.downloadCount = d.downloadCount + 1 WHERE d.fileName = :fileName")
     void updateDownloadCount(String fileName);
+
+    @Query("select e from DocumentReader e where e.fileName =:loanNo")
+    DocumentReader findByLoanNo(String loanNo);
 }

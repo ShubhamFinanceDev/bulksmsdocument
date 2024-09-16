@@ -16,7 +16,7 @@ public interface Service {
 
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
-    ResponseEntity<?> fetchPdfFile(String loanNo) throws Exception;
+    ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
 
     List<Object> sendSmsToUser(String smsCategory) throws Exception;
 }

@@ -196,14 +196,15 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public ResponseEntity<?> fetchPdfFile(String loanNo) throws Exception {
+    public ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
 
-        Path filePath = Paths.get(projectSavePath, loanNo /*+ ".pdf"*/);
-        if (!Files.exists(filePath)) {
+        DocumentReader documentReader = documentReaderRepo.findByLoanNo(loanNo);
+        if (documentReader != null){
             commonResponse.setMsg("File not found or invalid loanNo");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
+        Path filePath = Paths.get(projectSavePath, loanNo /*+ ".pdf"*/);
         Resource resource = resourceLoader.getResource("file:" + filePath);
         ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
 
