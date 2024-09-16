@@ -137,13 +137,9 @@ public class ServiceImpl implements Service {
         List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
-            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategory(smsCategory);
+            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
-
-                    String smsFlag = smsSendDetails.getSmsFlag().toUpperCase();
-
-                    if (smsFlag.equals("N")) {
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
@@ -160,11 +156,10 @@ public class ServiceImpl implements Service {
                         map.put("Timestamp", timestamp);
                         map.put("Flag", "Y");
                         list.add(map);
-                    } else {
-                        map.put("Message","Message cannot be send twice on : "+smsSendDetails.getMobileNumber());
-                        list.add(map);
                     }
-                }
+                } else {
+                map.put("Message", "No unsent SMS found for category: " + smsCategory);
+                list.add(map);
             }
             bulkSmsRepo.saveAll(bulkSmsList);
 
