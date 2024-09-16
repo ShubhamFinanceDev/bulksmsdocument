@@ -6,6 +6,7 @@ import com.bulkSms.Model.JwtRequest;
 import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
+import com.bulkSms.Utility.EncodingUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ public class Login {
     private AuthenticationManager manager;
     @Autowired
     private Service service;
+    @Autowired
+    private EncodingUtils encodingUtils;
 
     @Autowired
     private JwtHelper helper;
@@ -66,6 +69,18 @@ public class Login {
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException(" Invalid Username or Password  !!");
         }
+    }
 
+    @GetMapping("/download-pdf")
+    public ResponseEntity<?> downloadPdfFile(@RequestParam(name = "loanNo")String loanNo){
+        CommonResponse commonResponse = new CommonResponse();
+        String loanNoDecoded = encodingUtils.decode(loanNo);
+        System.out.println(loanNoDecoded);
+        try {
+            return service.fetchPdfFile(loanNoDecoded);
+        }catch (Exception e){
+            commonResponse.setMsg("Exception :" +e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
