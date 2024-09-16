@@ -1,5 +1,6 @@
 package com.bulkSms.Utility;
 import com.bulkSms.Entity.BulkSms;
+import com.bulkSms.Entity.DataUpload;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -19,20 +20,21 @@ public class CsvFileUtility{
         return TYPE.equals(file.getContentType());
     }
 
-    public List<BulkSms> csvBulksms(InputStream inputStream) throws Exception {
-        List<BulkSms> bulkSmsList = new ArrayList<>();
+    public List<DataUpload> csvBulksms(InputStream inputStream) throws Exception {
+        List<DataUpload> dataUploadList = new ArrayList<>();
 
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
              CSVParser csvParser = new CSVParser(bReader, CSVFormat.DEFAULT.withDelimiter('|').withTrim())) {
             List<CSVRecord> csvRecords = csvParser.getRecords();
             for (CSVRecord record : csvRecords) {
-                BulkSms bulkSms = new BulkSms();
-                bulkSms.setLoanNumber(record.get(0));
-                bulkSms.setMobileNumber(record.get(1));
-                bulkSms.setCertificateCategory(record.get(2));
-                bulkSmsList.add(bulkSms);
+                DataUpload dataUpload = new DataUpload();
+                dataUpload.setLoanNumber(record.get(0));
+                dataUpload.setMobileNumber(record.get(1));
+                dataUpload.setCertificateCategory(record.get(2));
+                dataUpload.setSmsFlag(record.get(3));
+                dataUploadList.add(dataUpload);
             }
         }
-        return bulkSmsList;
+        return dataUploadList;
     }
 }

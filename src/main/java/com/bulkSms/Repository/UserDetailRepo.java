@@ -12,4 +12,7 @@ import java.util.Optional;
 public interface UserDetailRepo extends JpaRepository<UserDetail,Long> {
     @Query("select u from UserDetail u where u.emailId=:userName")
     Optional<UserDetail> findUser(String userName);
+
+    @Query("select u from UserDetail u where u.emailId=:emailId")
+    Optional<Object> findByEmailId(String emailId);
 }
