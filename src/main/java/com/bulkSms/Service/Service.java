@@ -16,4 +16,6 @@ public interface Service {
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
     List<Object> sendSmsToUser(String smsCategory) throws Exception;
+
+    List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception;
 }

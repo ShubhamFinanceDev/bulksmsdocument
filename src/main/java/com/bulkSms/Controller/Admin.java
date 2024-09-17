@@ -58,17 +58,30 @@ public class Admin {
         return service.fetchPdf(pdfUrl);
     }
 
-    @GetMapping("/sending-sms")
-    public ResponseEntity<?> sendSms(@RequestParam String smsCategory) throws Exception
+    @GetMapping("/sms-process")
+    public ResponseEntity<?> sendSms(@RequestParam String smsCategory,@RequestParam String type) throws Exception
     {
         try {
-            List<Object> smsInformation = service.sendSmsToUser(smsCategory);
-            if(smsInformation.isEmpty()){
-                SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory,smsInformation);
-                return new ResponseEntity<>(response, HttpStatus.OK);
+            String type1 = type.toLowerCase().trim();
+            switch (type1) {
+                case "new" :
+                    List<Object> smsInformation = service.sendSmsToUser(smsCategory);
+                    if (smsInformation.isEmpty()) {
+                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation);
+                        return new ResponseEntity<>(response, HttpStatus.OK);
+                    }
+                    SmsResponse response = new SmsResponse(smsInformation.size(), "success", smsInformation);
+                    return new ResponseEntity<>(response, HttpStatus.OK);
+
+                case "previous" :
+                    List<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory);
+                    SmsResponse response1 = new SmsResponse(smsInformation1.size(), "success", smsInformation1);
+                    return new ResponseEntity<>(response1, HttpStatus.OK);
+
+                default:
+                    SmsResponse response2 = new SmsResponse("Invalid Type provided");
+                    return new ResponseEntity<>(response2, HttpStatus.BAD_REQUEST);
             }
-            SmsResponse response = new SmsResponse(smsInformation.size(), "success",smsInformation);
-            return new ResponseEntity<>(response, HttpStatus.OK);
         }catch (Exception e) {
             throw new Exception(e.getMessage());
         }

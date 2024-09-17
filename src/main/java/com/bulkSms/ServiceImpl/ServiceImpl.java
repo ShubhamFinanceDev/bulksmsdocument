@@ -9,6 +9,7 @@ import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Repository.BulkRepository;
 import com.bulkSms.Repository.DataUploadRepo;
+import com.bulkSms.Repository.DocumentDetailsRepo;
 import com.bulkSms.Repository.UserDetailRepo;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
@@ -52,6 +53,8 @@ public class ServiceImpl implements Service {
     private SmsUtility smsUtility;
     @Autowired
     private DataUploadRepo dataUploadRepo;
+    @Autowired
+    private DocumentDetailsRepo documentDetailsRepo;
 
     public ResponseEntity<CommonResponse> fetchPdf(String folderPath) {
         CommonResponse commonResponse = new CommonResponse();
@@ -140,6 +143,8 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
+                    String loanDetails="/sms-service/download-pdf/"+smsSendDetails.getLoanNumber();
+                    if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
                         BulkSms bulkSms = new BulkSms();
@@ -154,8 +159,10 @@ public class ServiceImpl implements Service {
                         map.put("loanNumber", smsSendDetails.getLoanNumber());
                         map.put("mobileNumber", smsSendDetails.getMobileNumber());
                         map.put("timestamp", timestamp);
-                        map.put("flag", "Y");
+                        map.put("smsFlag", "Y");
                         list.add(map);
+
+                    }
                     }
                 bulkSmsRepo.saveAll(bulkSmsList);
                 }
@@ -163,6 +170,31 @@ public class ServiceImpl implements Service {
             return list;
 
         } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception{
+        List<Object> userDetails = new ArrayList<>();
+        LocalDateTime timeStamp = LocalDateTime.now();
+
+        try {
+            List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
+            if(userDetailsList !=null && !userDetailsList.isEmpty()){
+                for (DataUpload userDetail : userDetailsList){
+
+                    Map<String,Object> map = new HashMap<>();
+                    map.put("loanNumber",userDetail.getLoanNumber());
+                    map.put("mobileNumber",userDetail.getMobileNumber());
+                    map.put("timestamp",timeStamp);
+                    map.put("smsFlag",userDetail.getSmsFlag());
+                    userDetails.add(map);
+                }
+            }
+            return userDetails;
+        } catch (Exception e){
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }

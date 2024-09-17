@@ -19,4 +19,8 @@ public class SmsResponse {
         this.smsInformation = smsInformation;
     }
 
+    public SmsResponse(String msg){
+        this.msg = msg;
+    }
+
 }
