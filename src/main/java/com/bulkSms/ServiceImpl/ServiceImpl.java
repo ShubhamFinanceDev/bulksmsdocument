@@ -181,16 +181,32 @@ public class ServiceImpl implements Service {
         LocalDateTime timeStamp = LocalDateTime.now();
 
         try {
-            List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
-            if(userDetailsList !=null && !userDetailsList.isEmpty()){
-                for (DataUpload userDetail : userDetailsList){
 
-                    Map<String,Object> map = new HashMap<>();
-                    map.put("loanNumber",userDetail.getLoanNumber());
-                    map.put("mobileNumber",userDetail.getMobileNumber());
-                    map.put("timestamp",timeStamp);
-                    map.put("smsFlag",userDetail.getSmsFlag());
-                    userDetails.add(map);
+            if (smsCategory==null || smsCategory.isEmpty()){
+                List<DataUpload> userDetails1 = dataUploadRepo.findByType();
+                if (userDetails1 != null && !userDetails1.isEmpty()) {
+                    for (DataUpload userDetailsList : userDetails1) {
+
+                        Map<String,Object> map = new HashMap<>();
+                        map.put("loanNumber", userDetailsList.getLoanNumber());
+                        map.put("mobileNumber", userDetailsList.getMobileNumber());
+                        map.put("timestamp", timeStamp);
+                        map.put("smsFlag", userDetailsList.getSmsFlag());
+                        userDetails.add(map);
+                    }
+                }
+            }else {
+                List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
+                if (userDetailsList != null && !userDetailsList.isEmpty()) {
+                    for (DataUpload userDetail : userDetailsList) {
+
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("loanNumber", userDetail.getLoanNumber());
+                        map.put("mobileNumber", userDetail.getMobileNumber());
+                        map.put("timestamp", timeStamp);
+                        map.put("smsFlag", userDetail.getSmsFlag());
+                        userDetails.add(map);
+                    }
                 }
             }
             return userDetails;
