@@ -19,4 +19,6 @@ public interface Service {
     ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
 
     List<Object> sendSmsToUser(String smsCategory) throws Exception;
+
+    List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception;
 }

@@ -14,6 +14,7 @@ import com.bulkSms.Repository.BulkRepository;
 import com.bulkSms.Repository.DocumentReaderRepo;
 import com.bulkSms.Repository.JobAuditTrailRepo;
 import com.bulkSms.Repository.DataUploadRepo;
+import com.bulkSms.Repository.DocumentDetailsRepo;
 import com.bulkSms.Repository.UserDetailRepo;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
@@ -65,6 +66,8 @@ public class ServiceImpl implements Service {
     private SmsUtility smsUtility;
     @Autowired
     private DataUploadRepo dataUploadRepo;
+    @Autowired
+    private DocumentDetailsRepo documentDetailsRepo;
 
     @Value("${project.save.path}")
     private final String projectSavePath;
@@ -200,7 +203,7 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
 
         DocumentReader documentReader = documentReaderRepo.findByLoanNo(loanNo);
-        if (documentReader != null){
+        if (documentReader != null) {
             commonResponse.setMsg("File not found or invalid loanNo");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
@@ -217,7 +220,6 @@ public class ServiceImpl implements Service {
     public List<Object> sendSmsToUser(String smsCategory) throws Exception {
         List<Object> list = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
-        Map<Object, Object> map = new HashMap<>();
         List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
@@ -225,30 +227,57 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    smsUtility.sendTextMsgToUser(smsSendDetails);
+                    String loanDetails = "/sms-service/download-pdf/" + smsSendDetails.getLoanNumber();
+                    if (documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()) {
+                        smsUtility.sendTextMsgToUser(smsSendDetails);
 
-                    BulkSms bulkSms = new BulkSms();
-                    bulkSms.setSmsTimeStamp(timestamp);
-                    bulkSms.setDataUpload(smsSendDetails);
-                    bulkSmsList.add(bulkSms);
+                        BulkSms bulkSms = new BulkSms();
+                        bulkSms.setSmsTimeStamp(timestamp);
+                        bulkSms.setDataUpload(smsSendDetails);
+                        bulkSmsList.add(bulkSms);
 
-                    smsSendDetails.setSmsFlag("Y");
-                    dataUploadRepo.save(smsSendDetails);
+                        smsSendDetails.setSmsFlag("Y");
+                        dataUploadRepo.save(smsSendDetails);
 
-                    map.put("loanNumber", smsSendDetails.getLoanNumber());
-                    map.put("mobileNumber", smsSendDetails.getMobileNumber());
-                    map.put("timestamp", timestamp);
-                    map.put("flag", "Y");
-                    list.add(map);
+                        Map<Object, Object> map = new HashMap<>();
+                        map.put("loanNumber", smsSendDetails.getLoanNumber());
+                        map.put("mobileNumber", smsSendDetails.getMobileNumber());
+                        map.put("timestamp", timestamp);
+                        map.put("smsFlag", "Y");
+                        list.add(map);
+
+                    }
                 }
-            } else {
-                map.put("msg", "No unsent SMS found for category: " + smsCategory);
-                list.add(map);
+                bulkSmsRepo.saveAll(bulkSmsList);
             }
-            bulkSmsRepo.saveAll(bulkSmsList);
 
             return list;
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception {
+        List<Object> userDetails = new ArrayList<>();
+        LocalDateTime timeStamp = LocalDateTime.now();
+
+        try {
+            List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
+            if (userDetailsList != null && !userDetailsList.isEmpty()) {
+                for (DataUpload userDetail : userDetailsList) {
+
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("loanNumber", userDetail.getLoanNumber());
+                    map.put("mobileNumber", userDetail.getMobileNumber());
+                    map.put("timestamp", timeStamp);
+                    map.put("smsFlag", userDetail.getSmsFlag());
+                    userDetails.add(map);
+                }
+            }
+            return userDetails;
         } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
