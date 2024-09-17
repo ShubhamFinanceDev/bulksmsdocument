@@ -62,8 +62,7 @@ public class Admin {
     public ResponseEntity<?> sendSms(@RequestParam String smsCategory,@RequestParam String type) throws Exception
     {
         try {
-            String type1 = type.toLowerCase().trim();
-            switch (type1) {
+            switch (type) {
                 case "new" :
                     List<Object> smsInformation = service.sendSmsToUser(smsCategory);
                     if (smsInformation.isEmpty()) {
