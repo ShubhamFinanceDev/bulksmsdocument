@@ -1,6 +1,7 @@
 package com.bulkSms.Controller;
 
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -54,12 +58,29 @@ public class Admin {
         return service.fetchPdf(pdfUrl);
     }
 
-    @GetMapping("/sending-sms")
-    public ResponseEntity<?> sendSms(@RequestParam String smsCategory) throws Exception
+    @GetMapping("/sms-process")
+    public ResponseEntity<?> sendSms(@RequestParam String smsCategory,@RequestParam String type) throws Exception
     {
         try {
-            List<Object> smsInformation = service.sendSmsToUser(smsCategory);
-            return new ResponseEntity<>(smsInformation, HttpStatus.OK);
+            switch (type) {
+                case "new" :
+                    List<Object> smsInformation = service.sendSmsToUser(smsCategory);
+                    if (smsInformation.isEmpty()) {
+                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation);
+                        return new ResponseEntity<>(response, HttpStatus.OK);
+                    }
+                    SmsResponse response = new SmsResponse(smsInformation.size(), "success", smsInformation);
+                    return new ResponseEntity<>(response, HttpStatus.OK);
+
+                case "previous" :
+                    List<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory);
+                    SmsResponse response1 = new SmsResponse(smsInformation1.size(), "success", smsInformation1);
+                    return new ResponseEntity<>(response1, HttpStatus.OK);
+
+                default:
+                    SmsResponse response2 = new SmsResponse("Invalid Type provided");
+                    return new ResponseEntity<>(response2, HttpStatus.BAD_REQUEST);
+            }
         }catch (Exception e) {
             throw new Exception(e.getMessage());
         }
