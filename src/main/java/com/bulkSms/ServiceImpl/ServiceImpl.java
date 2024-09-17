@@ -6,10 +6,7 @@ import com.bulkSms.Entity.BulkSms;
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
-import com.bulkSms.Model.CommonResponse;
-import com.bulkSms.Model.ListResponse;
-import com.bulkSms.Model.RegistrationDetails;
-import com.bulkSms.Model.ResponseOfFetchPdf;
+import com.bulkSms.Model.*;
 import com.bulkSms.Repository.BulkRepository;
 import com.bulkSms.Repository.DocumentReaderRepo;
 import com.bulkSms.Repository.JobAuditTrailRepo;
@@ -37,12 +34,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -104,7 +98,7 @@ public class ServiceImpl implements Service {
             jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
-        String baseDownloadUrl = "http://localhost:8080/sms-service/download-pdf?loanNo=";
+        String baseDownloadUrl = "/sms-service/download-pdf/";
 
         for (File sourceFile : files) {
             if (!sourceFile.exists() || !sourceFile.isFile()) {
@@ -113,7 +107,7 @@ public class ServiceImpl implements Service {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
 
-            String encodedName = encodingUtils.encode(sourceFile.getName());
+            String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
             System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
 
             Path sourcePath = sourceFile.toPath();
@@ -123,7 +117,7 @@ public class ServiceImpl implements Service {
                 Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                 DocumentReader documentReader = new DocumentReader();
                 documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName());
+                documentReader.setFileName(sourceFile.getName().replace(".pdf",""));
                 documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
                 documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
                 documentReader.setDownloadCount(0L);
@@ -153,7 +147,7 @@ public class ServiceImpl implements Service {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setDownloadCount(reader.getDownloadCount());
-            listResponse.setDownloadTime(reader.getUploadedTime().toLocalDateTime());
+            listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
             listResponse.setDownloadUrl(reader.getDownloadUrl());
             readerList.add(listResponse);
         }
@@ -201,18 +195,19 @@ public class ServiceImpl implements Service {
     @Override
     public ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-
+        System.out.println(loanNo);
         DocumentReader documentReader = documentReaderRepo.findByLoanNo(loanNo);
-        if (documentReader != null) {
+
+        if (documentReader == null) {
             commonResponse.setMsg("File not found or invalid loanNo");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
-        Path filePath = Paths.get(projectSavePath, loanNo /*+ ".pdf"*/);
+        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
         Resource resource = resourceLoader.getResource("file:" + filePath);
         ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
 
         if (response.getStatusCode() == HttpStatus.OK) {
-            documentReaderRepo.updateDownloadCount(String.valueOf(filePath.getFileName()));
+            documentReaderRepo.updateDownloadCount(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
         }
         return response;
     }
@@ -282,5 +277,38 @@ public class ServiceImpl implements Service {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
+    }
+
+    public ResponseEntity<?> getDashboardData() throws Exception{
+
+        CommonResponse commonResponse = new CommonResponse();
+        DashboardResponse dashboardResponse = new DashboardResponse();
+        List<DashboardDataList> lists = new ArrayList<>();
+
+        Long downloadCount = documentReaderRepo.getDownloadCount();
+        Long smsCount = dataUploadRepo.getSmsCount();
+        List<DocumentReader> dataUploadList = documentReaderRepo.findAll();
+        if (dataUploadList.isEmpty()){
+            commonResponse.setMsg("Data not found :");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+        }
+        for (DocumentReader data : dataUploadList){
+            DashboardDataList dashboardData = new DashboardDataList();
+            dashboardData.setLoanNo(data.getFileName());
+            dashboardData.setLastDownload(data.getLastDownload());
+            dashboardData.setDownloadCount(data.getDownloadCount());
+
+            Optional<DataUpload> dataUpload = dataUploadRepo.findByLoanNo(data.getFileName());
+            if (dataUpload.isPresent()) {
+                dashboardData.setCategory(dataUpload.get().getCertificateCategory());
+                dashboardData.setPhoneNo(dataUpload.get().getMobileNumber());
+            }
+            lists.add(dashboardData);
+        }
+        dashboardResponse.setDataLists(lists);
+        dashboardResponse.setSmsCount(smsCount);
+        dashboardResponse.setDownloadCount(downloadCount);
+        commonResponse.setMsg("Data found success");
+        return ResponseEntity.status(HttpStatus.OK).body(dashboardResponse);
     }
 }

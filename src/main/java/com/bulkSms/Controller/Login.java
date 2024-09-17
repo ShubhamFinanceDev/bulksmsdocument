@@ -75,12 +75,22 @@ public class Login {
     public ResponseEntity<?> downloadPdfFile(@PathVariable("loanNo") String loanNo) {
         CommonResponse commonResponse = new CommonResponse();
         String loanNoDecoded = encodingUtils.decode(loanNo);
-        System.out.println(loanNoDecoded);
         try {
             return service.fetchPdfFileForDownload(loanNoDecoded);
         }catch (Exception e){
             commonResponse.setMsg("Exception :" +e.getMessage());
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/dashboard-view")
+    public ResponseEntity<?> fetchDataForDashboard(){
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            return ResponseEntity.ok(service.getDashboardData().getBody());
+        }catch (Exception e){
+            commonResponse.setMsg(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
         }
     }
 }

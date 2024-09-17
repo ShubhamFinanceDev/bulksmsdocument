@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 
 @Data
 @Entity
-@Table(name = "document_reader")
+@Table(name = "document_details")
 public class DocumentReader {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,4 +23,6 @@ public class DocumentReader {
     private Long downloadCount;
     @Column(name = "download_url")
     private String downloadUrl;
+    @Column(name = "last_download")
+    private Timestamp lastDownload;
 }

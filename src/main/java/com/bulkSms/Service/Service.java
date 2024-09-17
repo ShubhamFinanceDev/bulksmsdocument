@@ -21,4 +21,6 @@ public interface Service {
     List<Object> sendSmsToUser(String smsCategory) throws Exception;
 
     List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception;
+
+    ResponseEntity<?> getDashboardData() throws Exception;
 }

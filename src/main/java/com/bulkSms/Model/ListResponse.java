@@ -8,6 +8,6 @@ import java.time.LocalDateTime;
 public class ListResponse {
     private String fileName;
     private Long downloadCount;
-    private LocalDateTime downloadTime;
+    private LocalDateTime uploadTime;
     private String downloadUrl;
 }
