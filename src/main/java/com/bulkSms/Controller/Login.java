@@ -84,13 +84,12 @@ public class Login {
     }
 
     @GetMapping("/dashboard-view")
-    public ResponseEntity<?> fetchDataForDashboard(){
+    public ResponseEntity<?> fetchDataForDashboard() throws Exception {
         CommonResponse commonResponse = new CommonResponse();
         try {
-            return ResponseEntity.ok(service.getDashboardData().getBody());
+            return service.getDashboardData();
         }catch (Exception e){
-            commonResponse.setMsg(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+            throw new Exception(e.getMessage());
         }
     }
 }
