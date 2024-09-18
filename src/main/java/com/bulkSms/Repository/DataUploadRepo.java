@@ -20,4 +20,7 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
     @Query("select e from DataUpload e where e.loanNumber =:fileName")
     Optional<DataUpload> findByLoanNo(String fileName);
+
+    @Query("select d from DataUpload d where d.smsFlag = 'Y'")
+    List<DataUpload> findByType();
 }
