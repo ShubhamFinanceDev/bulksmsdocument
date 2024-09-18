@@ -307,8 +307,9 @@ public class ServiceImpl implements Service {
             dashboardData.setCategory(data.getCertificateCategory());
             dashboardData.setPhoneNo(data.getMobileNumber());
             dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
+            dashboardData.setLoanNo(data.getLoanNumber());
             Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber());
-            if (documentDetails.isPresent()) {
+            if (documentDetails.isPresent() && documentDetails.get().getDownloadCount()>0) {
                 dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
                 dashboardData.setLastDownload(documentDetails.get().getLastDownload());
             } else {
