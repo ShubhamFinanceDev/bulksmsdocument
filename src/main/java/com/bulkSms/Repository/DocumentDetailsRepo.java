@@ -1,5 +1,6 @@
 package com.bulkSms.Repository;
 
+import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.DocumentDetails;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -26,4 +28,7 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
 
     @Query("select dd from DocumentDetails dd where dd.downloadUrl=:loanDetails")
     Optional<Object> findDocumentByLoanNumber(String loanDetails);
+
+    @Query("select dd from DocumentDetails dd where dd.fileName=:loanNumber and dd.downloadCount > 0")
+    Optional<DocumentDetails> findDataByLoanNo(String loanNumber);
 }

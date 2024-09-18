@@ -38,8 +38,6 @@ public class ServiceImpl implements Service {
     @Autowired
     private CsvFileUtility csvFileUtility;
     @Autowired
-    private BulkRepository bulkRepository;
-    @Autowired
     private EncodingUtils encodingUtils;
     @Autowired
     private UserDetailRepo userDetailRepo;
@@ -49,6 +47,7 @@ public class ServiceImpl implements Service {
     private JobAuditTrailRepo jobAuditTrailRepo;
     @Autowired
     private DocumentDetailsRepo documentDetailsRepo;
+    @Autowired
     private BulkRepository bulkSmsRepo;
     @Autowired
     private SmsUtility smsUtility;
@@ -214,7 +213,8 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    String loanDetails = "/sms-service/download-pdf/" + smsSendDetails.getLoanNumber();
+                    String encodedLoanNumber = encodingUtils.encode(smsSendDetails.getLoanNumber());
+                    String loanDetails = "/sms-service/download-pdf/" + encodedLoanNumber;
                     if (documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()) {
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
@@ -234,9 +234,9 @@ public class ServiceImpl implements Service {
                         list.add(map);
 
                     }
-                    }
-                bulkSmsRepo.saveAll(bulkSmsList);
                 }
+                bulkSmsRepo.saveAll(bulkSmsList);
+            }
 
             return list;
 
@@ -247,18 +247,18 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception{
+    public List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
 
         try {
 
-            if (smsCategory==null || smsCategory.isEmpty()){
+            if (smsCategory == null || smsCategory.isEmpty()) {
                 List<DataUpload> userDetails1 = dataUploadRepo.findByType();
                 if (userDetails1 != null && !userDetails1.isEmpty()) {
                     for (DataUpload userDetailsList : userDetails1) {
 
-                        Map<String,Object> map = new HashMap<>();
+                        Map<String, Object> map = new HashMap<>();
                         map.put("loanNumber", userDetailsList.getLoanNumber());
                         map.put("mobileNumber", userDetailsList.getMobileNumber());
                         map.put("timestamp", timeStamp);
@@ -266,7 +266,7 @@ public class ServiceImpl implements Service {
                         userDetails.add(map);
                     }
                 }
-            }else {
+            } else {
                 List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
                 if (userDetailsList != null && !userDetailsList.isEmpty()) {
                     for (DataUpload userDetail : userDetailsList) {
@@ -281,7 +281,7 @@ public class ServiceImpl implements Service {
                 }
             }
             return userDetails;
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
@@ -295,28 +295,35 @@ public class ServiceImpl implements Service {
 
         Long downloadCount = documentDetailsRepo.getDownloadCount();
         Long smsCount = dataUploadRepo.getSmsCount();
-        List<DocumentDetails> dataUploadList = documentDetailsRepo.findAll();
-        if (dataUploadList.isEmpty()) {
-            commonResponse.setMsg("Data not found :");
+        List<DataUpload> dataUpload = dataUploadRepo.findByType();
+
+        if (dataUpload.isEmpty()) {
+            commonResponse.setMsg("Data not found.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
-        for (DocumentDetails data : dataUploadList) {
-            DashboardDataList dashboardData = new DashboardDataList();
-            dashboardData.setLoanNo(data.getFileName());
-            dashboardData.setLastDownload(data.getLastDownload());
-            dashboardData.setDownloadCount(data.getDownloadCount());
 
-            Optional<DataUpload> dataUpload = dataUploadRepo.findByLoanNo(data.getFileName());
-            if (dataUpload.isPresent()) {
-                dashboardData.setCategory(dataUpload.get().getCertificateCategory());
-                dashboardData.setPhoneNo(dataUpload.get().getMobileNumber());
+        for (DataUpload data : dataUpload) {
+            DashboardDataList dashboardData = new DashboardDataList();
+            dashboardData.setCategory(data.getCertificateCategory());
+            dashboardData.setPhoneNo(data.getMobileNumber());
+            dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber());
+            if (documentDetails.isPresent()) {
+                dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
+                dashboardData.setLastDownload(documentDetails.get().getLastDownload());
+            } else {
+                System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
             }
+
             lists.add(dashboardData);
         }
+
         dashboardResponse.setDataLists(lists);
         dashboardResponse.setSmsCount(smsCount);
         dashboardResponse.setDownloadCount(downloadCount);
-        commonResponse.setMsg("Data found success");
-        return ResponseEntity.status(HttpStatus.OK).body(dashboardResponse);
+        commonResponse.setMsg("Data found successfully.");
+
+        return ResponseEntity.ok(dashboardResponse);
     }
+
 }
