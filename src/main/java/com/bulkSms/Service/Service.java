@@ -2,6 +2,8 @@ package com.bulkSms.Service;
 
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +17,7 @@ public interface Service {
 
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
-    List<Object> sendSmsToUser(String smsCategory) throws Exception;
+    Page<Object> sendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
 
-    List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception;
+    Page<Object> ListOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
 }

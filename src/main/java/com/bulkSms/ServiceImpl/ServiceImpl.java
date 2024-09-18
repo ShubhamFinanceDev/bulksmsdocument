@@ -15,8 +15,12 @@ import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
 import com.bulkSms.Utility.SmsUtility;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -132,14 +136,15 @@ public class ServiceImpl implements Service {
         registerUserDetails.setRole(role.getRole());
     }
 
+
     @Override
-    public List<Object> sendSmsToUser(String smsCategory) throws Exception {
-        List<Object> list = new ArrayList<>();
+    public Page<Object> sendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
+        List<Object> content = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
         List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
-            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
+            Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory,pageable);
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
@@ -160,14 +165,14 @@ public class ServiceImpl implements Service {
                         map.put("mobileNumber", smsSendDetails.getMobileNumber());
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "Y");
-                        list.add(map);
+                        content.add(map);
 
                     }
                     }
                 bulkSmsRepo.saveAll(bulkSmsList);
                 }
 
-            return list;
+            return new PageImpl<>(content, pageable, smsCategoryDetails.getTotalElements());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -176,43 +181,38 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception{
+    public Page<Object> ListOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
 
         try {
+            Page<DataUpload> userDetailsList;
 
-            if (smsCategory==null || smsCategory.isEmpty()){
-                List<DataUpload> userDetails1 = dataUploadRepo.findByType();
-                if (userDetails1 != null && !userDetails1.isEmpty()) {
-                    for (DataUpload userDetailsList : userDetails1) {
+            if (smsCategory == null || smsCategory.isEmpty()) {
 
-                        Map<String,Object> map = new HashMap<>();
-                        map.put("loanNumber", userDetailsList.getLoanNumber());
-                        map.put("mobileNumber", userDetailsList.getMobileNumber());
-                        map.put("timestamp", timeStamp);
-                        map.put("smsFlag", userDetailsList.getSmsFlag());
-                        userDetails.add(map);
-                    }
-                }
-            }else {
-                List<DataUpload> userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory);
-                if (userDetailsList != null && !userDetailsList.isEmpty()) {
-                    for (DataUpload userDetail : userDetailsList) {
+                userDetailsList = dataUploadRepo.findByType(pageable);
+            } else {
 
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("loanNumber", userDetail.getLoanNumber());
-                        map.put("mobileNumber", userDetail.getMobileNumber());
-                        map.put("timestamp", timeStamp);
-                        map.put("smsFlag", userDetail.getSmsFlag());
-                        userDetails.add(map);
-                    }
+                userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory, pageable);
+            }
+
+            if (userDetailsList.hasContent()) {
+                for (DataUpload userDetail : userDetailsList) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("loanNumber", userDetail.getLoanNumber());
+                    map.put("mobileNumber", userDetail.getMobileNumber());
+                    map.put("timestamp", timeStamp);
+                    map.put("smsFlag", userDetail.getSmsFlag());
+                    userDetails.add(map);
                 }
             }
-            return userDetails;
-        } catch (Exception e){
+
+            return new PageImpl<>(userDetails, pageable, userDetailsList.getTotalElements());
+
+        } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
     }
+
 }
