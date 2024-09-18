@@ -7,12 +7,7 @@ import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
 import com.bulkSms.Model.*;
-import com.bulkSms.Repository.BulkRepository;
-import com.bulkSms.Repository.DocumentReaderRepo;
-import com.bulkSms.Repository.JobAuditTrailRepo;
-import com.bulkSms.Repository.DataUploadRepo;
-import com.bulkSms.Repository.DocumentDetailsRepo;
-import com.bulkSms.Repository.UserDetailRepo;
+import com.bulkSms.Repository.*;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
@@ -35,7 +30,6 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 @org.springframework.stereotype.Service
@@ -54,14 +48,12 @@ public class ServiceImpl implements Service {
     @Autowired
     private JobAuditTrailRepo jobAuditTrailRepo;
     @Autowired
-    private DocumentReaderRepo documentReaderRepo;
+    private DocumentDetailsRepo documentDetailsRepo;
     private BulkRepository bulkSmsRepo;
     @Autowired
     private SmsUtility smsUtility;
     @Autowired
     private DataUploadRepo dataUploadRepo;
-    @Autowired
-    private DocumentDetailsRepo documentDetailsRepo;
 
     @Value("${project.save.path}")
     private final String projectSavePath;
@@ -78,7 +70,7 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
-        List<DocumentReader> documentReaderList = new ArrayList<>();
+        List<DocumentDetails> documentReaderList = new ArrayList<>();
         File sourceFolder = new File(folderPath);
 
         jobAuditTrail.setJobName("Invoke_file");
@@ -115,9 +107,9 @@ public class ServiceImpl implements Service {
 
             try {
                 Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                DocumentReader documentReader = new DocumentReader();
+                DocumentDetails documentReader = new DocumentDetails();
                 documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName().replace(".pdf",""));
+                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
                 documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
                 documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
                 documentReader.setDownloadCount(0L);
@@ -131,7 +123,7 @@ public class ServiceImpl implements Service {
             }
         }
 
-        documentReaderRepo.saveAll(documentReaderList);
+        documentDetailsRepo.saveAll(documentReaderList);
         jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
         setResponse(response);
         commonResponse.setMsg("All PDF files copied successfully with encoded names.");
@@ -141,9 +133,9 @@ public class ServiceImpl implements Service {
 
 
     private void setResponse(ResponseOfFetchPdf response) {
-        List<DocumentReader> documentReaderList = documentReaderRepo.findAll();
+        List<DocumentDetails> documentReaderList = documentDetailsRepo.findAll();
         List<ListResponse> readerList = new ArrayList<>();
-        for (DocumentReader reader : documentReaderList) {
+        for (DocumentDetails reader : documentReaderList) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setDownloadCount(reader.getDownloadCount());
@@ -196,7 +188,7 @@ public class ServiceImpl implements Service {
     public ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
         System.out.println(loanNo);
-        DocumentReader documentReader = documentReaderRepo.findByLoanNo(loanNo);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
 
         if (documentReader == null) {
             commonResponse.setMsg("File not found or invalid loanNo");
@@ -207,7 +199,7 @@ public class ServiceImpl implements Service {
         ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
 
         if (response.getStatusCode() == HttpStatus.OK) {
-            documentReaderRepo.updateDownloadCount(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
+            documentDetailsRepo.updateDownloadCount(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
         }
         return response;
     }
@@ -295,20 +287,20 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ResponseEntity<?> getDashboardData() throws Exception{
+    public ResponseEntity<?> getDashboardData() throws Exception {
 
         CommonResponse commonResponse = new CommonResponse();
         DashboardResponse dashboardResponse = new DashboardResponse();
         List<DashboardDataList> lists = new ArrayList<>();
 
-        Long downloadCount = documentReaderRepo.getDownloadCount();
+        Long downloadCount = documentDetailsRepo.getDownloadCount();
         Long smsCount = dataUploadRepo.getSmsCount();
-        List<DocumentReader> dataUploadList = documentReaderRepo.findAll();
-        if (dataUploadList.isEmpty()){
+        List<DocumentDetails> dataUploadList = documentDetailsRepo.findAll();
+        if (dataUploadList.isEmpty()) {
             commonResponse.setMsg("Data not found :");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
-        for (DocumentReader data : dataUploadList){
+        for (DocumentDetails data : dataUploadList) {
             DashboardDataList dashboardData = new DashboardDataList();
             dashboardData.setLoanNo(data.getFileName());
             dashboardData.setLastDownload(data.getLastDownload());
