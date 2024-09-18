@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -59,22 +62,23 @@ public class Admin {
     }
 
     @GetMapping("/sms-process")
-    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type) throws Exception
+    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "0") int page,@RequestParam(defaultValue = "10") int size) throws Exception
     {
         try {
+            Pageable pageable = PageRequest.of(page,size);
             switch (type) {
                 case "new" :
-                    List<Object> smsInformation = service.sendSmsToUser(smsCategory);
+                    Page<Object> smsInformation = service.sendSmsToUser(smsCategory,pageable);
                     if (smsInformation.isEmpty()) {
-                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation);
+                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation.getContent());
                         return new ResponseEntity<>(response, HttpStatus.OK);
                     }
-                    SmsResponse response = new SmsResponse(smsInformation.size(), "success", smsInformation);
+                    SmsResponse response = new SmsResponse(smsInformation.getNumberOfElements(), "success", smsInformation.getContent());
                     return new ResponseEntity<>(response, HttpStatus.OK);
 
                 case "previous" :
-                    List<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory);
-                    SmsResponse response1 = new SmsResponse(smsInformation1.size(), "success", smsInformation1);
+                    Page<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory,pageable);
+                    SmsResponse response1 = new SmsResponse(smsInformation1.getNumberOfElements(), "success", smsInformation1.getContent());
                     return new ResponseEntity<>(response1, HttpStatus.OK);
 
                 default:
