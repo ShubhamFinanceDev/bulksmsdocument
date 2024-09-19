@@ -72,7 +72,7 @@ public class ServiceImpl implements Service {
         List<DocumentDetails> documentReaderList = new ArrayList<>();
         File sourceFolder = new File(folderPath);
 
-        jobAuditTrail.setJobName("Invoke_file");
+        jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
@@ -195,12 +195,8 @@ public class ServiceImpl implements Service {
         }
         Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
         Resource resource = resourceLoader.getResource("file:" + filePath);
-        ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            documentDetailsRepo.updateDownloadCount(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
-        }
-        return response;
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
     }
 
     public List<Object> sendSmsToUser(String smsCategory) throws Exception {
@@ -309,22 +305,38 @@ public class ServiceImpl implements Service {
             dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
             dashboardData.setLoanNo(data.getLoanNumber());
             Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber());
-            if (documentDetails.isPresent() && documentDetails.get().getDownloadCount()>0) {
+            if (documentDetails.isPresent() && (documentDetails.get().getDownloadCount() > 0)) {
                 dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
                 dashboardData.setLastDownload(documentDetails.get().getLastDownload());
-            } else {
-                System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
-            }
+                lists.add(dashboardData);
 
-            lists.add(dashboardData);
+            }
         }
 
         dashboardResponse.setDataLists(lists);
         dashboardResponse.setSmsCount(smsCount);
         dashboardResponse.setDownloadCount(downloadCount);
-        commonResponse.setMsg("Data found successfully.");
+        dashboardResponse.setMsg("Data found successfully.");
 
         return ResponseEntity.ok(dashboardResponse);
     }
 
+    public ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo) {
+        CommonResponse commonResponse = new CommonResponse();
+        System.out.println(loanNo);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+
+        if (documentReader == null) {
+            commonResponse.setMsg("File not found or invalid loanNo");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+        }
+        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
+        Resource resource = resourceLoader.getResource("file:" + filePath);
+        ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            documentDetailsRepo.updateDownloadCountBySmsLink(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
+        }
+        return response;
+    }
 }

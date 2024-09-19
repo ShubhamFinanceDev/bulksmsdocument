@@ -85,11 +85,21 @@ public class Login {
 
     @GetMapping("/dashboard-view")
     public ResponseEntity<?> fetchDataForDashboard() throws Exception {
-        CommonResponse commonResponse = new CommonResponse();
         try {
             return service.getDashboardData();
         }catch (Exception e){
             throw new Exception(e.getMessage());
+        }
+    }
+
+    @GetMapping("/quick-pdf-sms/{loanNo}")
+    public ResponseEntity<?> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            return service.fetchPdfFileForDownloadBySmsLink(loanNo);
+        }catch (Exception e){
+            commonResponse.setMsg("Exception found :"+e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
         }
     }
 }
