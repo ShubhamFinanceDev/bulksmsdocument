@@ -3,6 +3,7 @@ package com.bulkSms.Entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,4 +25,6 @@ public class DocumentDetails {
     private long downloadCount;
     @Column(name = "download_url")
     private String downloadUrl;
+    @Column(name = "last_download")
+    private Timestamp lastDownload;
 }
