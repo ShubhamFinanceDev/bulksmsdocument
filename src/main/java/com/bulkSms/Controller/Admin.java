@@ -81,6 +81,11 @@ public class Admin {
                     SmsResponse response1 = new SmsResponse(smsInformation1.getNumberOfElements(), "success", smsInformation1.getContent());
                     return new ResponseEntity<>(response1, HttpStatus.OK);
 
+                case "unprocessed" :
+                    Page<Object> smsInformation2 = service.listOfUnsendSms(smsCategory,pageable);
+                    SmsResponse response3 = new SmsResponse(smsInformation2.getNumberOfElements(), "success", smsInformation2.getContent());
+                    return new ResponseEntity<>(response3, HttpStatus.OK);
+
                 default:
                     SmsResponse response2 = new SmsResponse("Invalid Type provided");
                     return new ResponseEntity<>(response2, HttpStatus.BAD_REQUEST);

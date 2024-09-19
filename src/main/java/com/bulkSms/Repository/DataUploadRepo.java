@@ -18,4 +18,10 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
     @Query("select d from DataUpload d where d.smsFlag = 'Y'")
     Page<DataUpload> findByType(Pageable pageable);
+
+    @Query("select d from DataUpload d where d.smsFlag = 'N'")
+    Page<DataUpload> findByTypeForUnsendSms(Pageable pageable);
+
+    @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'")
+    Page<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory, Pageable pageable);
 }

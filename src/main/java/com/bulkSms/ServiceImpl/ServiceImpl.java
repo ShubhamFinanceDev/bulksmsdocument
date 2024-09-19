@@ -215,4 +215,37 @@ public class ServiceImpl implements Service {
         }
     }
 
+    @Override
+    public Page<Object> listOfUnsendSms(String smsCategory, Pageable pageable) throws Exception{
+        List<Object> detailsOfUser = new ArrayList<>();
+        LocalDateTime timeStamp = LocalDateTime.now();
+
+        try {
+            Page<DataUpload> unsendSmsDetails;
+            if (smsCategory == null || smsCategory.isEmpty()) {
+
+                unsendSmsDetails = dataUploadRepo.findByTypeForUnsendSms(pageable);
+            } else {
+
+                unsendSmsDetails = dataUploadRepo.findBySmsCategoryForUnsendSms(smsCategory, pageable);
+            }
+
+            if (unsendSmsDetails.hasContent()) {
+                for (DataUpload userDetail : unsendSmsDetails) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("loanNumber", userDetail.getLoanNumber());
+                    map.put("mobileNumber", userDetail.getMobileNumber());
+                    map.put("timestamp", timeStamp);
+                    map.put("smsFlag", userDetail.getSmsFlag());
+                    detailsOfUser.add(map);
+                }
+            }
+            return new PageImpl<>(detailsOfUser, pageable, unsendSmsDetails.getTotalElements());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e.getMessage());
+        }
+    }
+
 }
