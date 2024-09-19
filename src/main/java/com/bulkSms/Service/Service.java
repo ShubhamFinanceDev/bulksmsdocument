@@ -19,5 +19,5 @@ public interface Service {
 
     Page<Object> sendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
 
-    Page<Object> ListOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
+    Page<Object> listOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
 }

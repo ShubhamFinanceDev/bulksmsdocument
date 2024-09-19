@@ -77,7 +77,7 @@ public class Admin {
                     return new ResponseEntity<>(response, HttpStatus.OK);
 
                 case "previous" :
-                    Page<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory,pageable);
+                    Page<Object> smsInformation1 = service.listOfSendSmsToUser(smsCategory,pageable);
                     SmsResponse response1 = new SmsResponse(smsInformation1.getNumberOfElements(), "success", smsInformation1.getContent());
                     return new ResponseEntity<>(response1, HttpStatus.OK);
 

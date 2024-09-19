@@ -181,7 +181,7 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public Page<Object> ListOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
+    public Page<Object> listOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
 
