@@ -2,6 +2,10 @@ package com.bulkSms.ServiceImpl;
 
 
 import com.bulkSms.Entity.*;
+import com.bulkSms.Entity.BulkSms;
+import com.bulkSms.Entity.DataUpload;
+import com.bulkSms.Entity.Role;
+import com.bulkSms.Entity.UserDetail;
 import com.bulkSms.Model.*;
 import com.bulkSms.Repository.*;
 import com.bulkSms.Service.Service;
@@ -26,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.ArrayList;
 
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -36,8 +41,6 @@ public class ServiceImpl implements Service {
     private BulkRepository bulkRepository;
     @Autowired
     private EncodingUtils encodingUtils;
-    @Value("${project.save.path}")
-    private String projectSavePath;
     @Autowired
     private UserDetailRepo userDetailRepo;
     @Autowired
@@ -53,6 +56,8 @@ public class ServiceImpl implements Service {
     @Autowired
     private DataUploadRepo dataUploadRepo;
 
+    @Value("${project.save.path}")
+    private final String projectSavePath;
     private final ResourceLoader resourceLoader;
 
     public ServiceImpl(ResourceLoader resourceLoader, @Value("${project.save.path}") String projectSavePath) {
@@ -106,7 +111,7 @@ public class ServiceImpl implements Service {
                 DocumentDetails documentReader = new DocumentDetails();
                 documentReader.setJobId(jobAuditTrail.getJobId());
                 documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()).toLocalDateTime());
+                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
                 documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
                 documentReader.setDownloadCount(0L);
 
@@ -114,6 +119,7 @@ public class ServiceImpl implements Service {
 
             } catch (IOException e) {
                 commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
+                jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
             }
         }
@@ -134,7 +140,7 @@ public class ServiceImpl implements Service {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setDownloadCount(reader.getDownloadCount());
-            listResponse.setUploadTime(LocalDateTime.from(reader.getUploadedTime().toLocalTime()));
+            listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
             listResponse.setDownloadUrl(reader.getDownloadUrl());
             readerList.add(listResponse);
         }
@@ -209,7 +215,8 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    String loanDetails = "/sms-service/download-pdf/" + encodingUtils.encode(smsSendDetails.getLoanNumber());
+                    String encodedLoanNumber = encodingUtils.encode(smsSendDetails.getLoanNumber());
+                    String loanDetails = "/sms-service/download-pdf/" + encodedLoanNumber;
                     if (documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()) {
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
