@@ -11,17 +11,32 @@ import java.util.List;
 public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
     @Query("select d from DataUpload d where d.certificateCategory = :userCategory and d.smsFlag = 'N'")
-    Page<DataUpload> findByCategoryAndSmsFlagNotSent(String userCategory, Pageable pageable);
+    List<DataUpload> findByCategoryAndSmsFlagNotSent(String userCategory, Pageable pageable);
 
     @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
-    Page<DataUpload> findBySmsCategory(String smsCategory, Pageable pageable);
+    List<DataUpload> findBySmsCategory(String smsCategory, Pageable pageable);
 
     @Query("select d from DataUpload d where d.smsFlag = 'Y'")
-    Page<DataUpload> findByType(Pageable pageable);
+    List<DataUpload> findByType(Pageable pageable);
 
     @Query("select d from DataUpload d where d.smsFlag = 'N'")
-    Page<DataUpload> findByTypeForUnsendSms(Pageable pageable);
+    List<DataUpload> findByTypeForUnsendSms(Pageable pageable);
 
     @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'")
-    Page<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory, Pageable pageable);
+    List<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory, Pageable pageable);
+
+    @Query("select count(d) from DataUpload d where d.smsFlag = 'Y'")
+    long findCount();
+
+    @Query("select count(d) from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
+    long findCountWithSmsCategory(String smsCategory);
+
+    @Query("select count(d) from DataUpload d where d.smsFlag = 'N'")
+    long findUnsendSmsCountByType();
+
+    @Query("select count(d) from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'")
+    long findUnsendSmsCountByCategory(String smsCategory);
+
+    @Query("select count(d) from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
+    long smsToBeSendCount(String smsCategory);
 }

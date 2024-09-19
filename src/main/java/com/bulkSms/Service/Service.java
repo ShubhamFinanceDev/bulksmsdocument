@@ -2,6 +2,7 @@ package com.bulkSms.Service;
 
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.SmsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +18,9 @@ public interface Service {
 
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
-    Page<Object> sendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
+    SmsResponse sendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
-    Page<Object> listOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception;
+    SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
-    Page<Object> listOfUnsendSms(String smsCategory, Pageable pageable) throws Exception;
+    SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 }

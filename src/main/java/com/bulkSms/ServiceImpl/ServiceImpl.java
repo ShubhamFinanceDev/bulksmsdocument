@@ -7,6 +7,7 @@ import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Repository.BulkRepository;
 import com.bulkSms.Repository.DataUploadRepo;
 import com.bulkSms.Repository.DocumentDetailsRepo;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -138,18 +140,22 @@ public class ServiceImpl implements Service {
 
 
     @Override
-    public Page<Object> sendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
+    public SmsResponse sendSmsToUser(String smsCategory, int pageNo) throws Exception {
         List<Object> content = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
         List<BulkSms> bulkSmsList = new ArrayList<>();
+        long detailOfCount=0;
+        int pageSize=3;
 
         try {
-            Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory,pageable);
+            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory,pageable);
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
                     String loanDetails="/sms-service/download-pdf/"+encodingUtils.encode(smsSendDetails.getLoanNumber());
                     if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
+
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
                         BulkSms bulkSms = new BulkSms();
@@ -166,13 +172,17 @@ public class ServiceImpl implements Service {
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "Y");
                         content.add(map);
-
+                        System.out.println(content);
+                        detailOfCount++;
                     }
                     }
                 bulkSmsRepo.saveAll(bulkSmsList);
-                }
 
-            return new PageImpl<>(content, pageable, smsCategoryDetails.getTotalElements());
+                return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",content);
+
+            }else {
+                return new SmsResponse(0,false,"No unsent SMS found for category: "+ smsCategory ,content);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -181,22 +191,26 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public Page<Object> listOfSendSmsToUser(String smsCategory, Pageable pageable) throws Exception {
+    public SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
+        long detailOfCount=0;
+        int pageSize=2;
 
         try {
-            Page<DataUpload> userDetailsList;
-
+            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+            List<DataUpload> userDetailsList;
             if (smsCategory == null || smsCategory.isEmpty()) {
 
                 userDetailsList = dataUploadRepo.findByType(pageable);
+                detailOfCount = dataUploadRepo.findCount();
             } else {
 
                 userDetailsList = dataUploadRepo.findBySmsCategory(smsCategory, pageable);
+                detailOfCount = dataUploadRepo.findCountWithSmsCategory(smsCategory);
             }
 
-            if (userDetailsList.hasContent()) {
+            if (!userDetailsList.isEmpty()) {
                 for (DataUpload userDetail : userDetailsList) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
@@ -204,10 +218,11 @@ public class ServiceImpl implements Service {
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", userDetail.getSmsFlag());
                     userDetails.add(map);
+
                 }
             }
 
-            return new PageImpl<>(userDetails, pageable, userDetailsList.getTotalElements());
+            return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",userDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -216,21 +231,26 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public Page<Object> listOfUnsendSms(String smsCategory, Pageable pageable) throws Exception{
+    public SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception{
         List<Object> detailsOfUser = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
+        long detailOfCount=0;
+        int pageSize=2;
 
         try {
-            Page<DataUpload> unsendSmsDetails;
+            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+            List<DataUpload> unsendSmsDetails;
             if (smsCategory == null || smsCategory.isEmpty()) {
 
                 unsendSmsDetails = dataUploadRepo.findByTypeForUnsendSms(pageable);
+                detailOfCount = dataUploadRepo.findUnsendSmsCountByType();
             } else {
 
                 unsendSmsDetails = dataUploadRepo.findBySmsCategoryForUnsendSms(smsCategory, pageable);
+                detailOfCount = dataUploadRepo.findUnsendSmsCountByCategory(smsCategory);
             }
 
-            if (unsendSmsDetails.hasContent()) {
+            if (!unsendSmsDetails.isEmpty()) {
                 for (DataUpload userDetail : unsendSmsDetails) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
@@ -240,7 +260,7 @@ public class ServiceImpl implements Service {
                     detailsOfUser.add(map);
                 }
             }
-            return new PageImpl<>(detailsOfUser, pageable, unsendSmsDetails.getTotalElements());
+            return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",detailsOfUser);
 
         } catch (Exception e) {
             e.printStackTrace();

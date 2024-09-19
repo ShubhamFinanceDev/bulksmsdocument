@@ -62,33 +62,22 @@ public class Admin {
     }
 
     @GetMapping("/sms-process")
-    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "0") int page,@RequestParam(defaultValue = "10") int size) throws Exception
+    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "1") int pageNo) throws Exception
     {
         try {
-            Pageable pageable = PageRequest.of(page,size);
+
             switch (type) {
                 case "new" :
-                    Page<Object> smsInformation = service.sendSmsToUser(smsCategory,pageable);
-                    if (smsInformation.isEmpty()) {
-                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation.getContent());
-                        return new ResponseEntity<>(response, HttpStatus.OK);
-                    }
-                    SmsResponse response = new SmsResponse(smsInformation.getNumberOfElements(), "success", smsInformation.getContent());
-                    return new ResponseEntity<>(response, HttpStatus.OK);
+                     return new ResponseEntity<>(service.sendSmsToUser(smsCategory, pageNo), HttpStatus.OK);
 
                 case "previous" :
-                    Page<Object> smsInformation1 = service.listOfSendSmsToUser(smsCategory,pageable);
-                    SmsResponse response1 = new SmsResponse(smsInformation1.getNumberOfElements(), "success", smsInformation1.getContent());
-                    return new ResponseEntity<>(response1, HttpStatus.OK);
+                    return new ResponseEntity<>(service.listOfSendSmsToUser(smsCategory,pageNo), HttpStatus.OK);
 
                 case "unprocessed" :
-                    Page<Object> smsInformation2 = service.listOfUnsendSms(smsCategory,pageable);
-                    SmsResponse response3 = new SmsResponse(smsInformation2.getNumberOfElements(), "success", smsInformation2.getContent());
-                    return new ResponseEntity<>(response3, HttpStatus.OK);
+                    return new ResponseEntity<>(service.listOfUnsendSms(smsCategory,pageNo), HttpStatus.OK);
 
                 default:
-                    SmsResponse response2 = new SmsResponse("Invalid Type provided");
-                    return new ResponseEntity<>(response2, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>("Invalid Type provided", HttpStatus.BAD_REQUEST);
             }
         }catch (Exception e) {
             throw new Exception(e.getMessage());
