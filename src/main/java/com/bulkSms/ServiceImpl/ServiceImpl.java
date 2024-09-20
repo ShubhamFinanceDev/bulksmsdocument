@@ -208,16 +208,14 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public SmsResponse sendSmsToUser(String smsCategory, int pageNo) throws Exception {
+    public SmsResponse sendSmsToUser(String smsCategory) throws Exception {
         List<Object> content = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
         List<BulkSms> bulkSmsList = new ArrayList<>();
-        long detailOfCount=0;
-        int pageSize=100;
 
         try {
-            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
-            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory,pageable);
+
+            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
@@ -240,16 +238,15 @@ public class ServiceImpl implements Service {
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "Y");
                         content.add(map);
-                        System.out.println(content);
-                        detailOfCount++;
                     }
                 }
                 bulkSmsRepo.saveAll(bulkSmsList);
 
-                return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",content);
-
-            }else {
-                return new SmsResponse(0,false,"No unsent SMS found for category: "+ smsCategory ,content);
+            }
+            if(content.isEmpty()){
+                return new SmsResponse(0,"No unsent SMS found for category: "+smsCategory,content);
+            } else {
+                return new SmsResponse(content.size(),"success",content);
             }
 
         } catch (Exception e) {

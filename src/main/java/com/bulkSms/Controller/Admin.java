@@ -65,7 +65,7 @@ public class Admin {
 
             switch (type) {
                 case "new" :
-                    return new ResponseEntity<>(service.sendSmsToUser(smsCategory, pageNo), HttpStatus.OK);
+                    return new ResponseEntity<>(service.sendSmsToUser(smsCategory), HttpStatus.OK);
 
                 case "previous" :
                     return new ResponseEntity<>(service.listOfSendSmsToUser(smsCategory,pageNo), HttpStatus.OK);

@@ -19,7 +19,7 @@ public interface Service {
 
     ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
 
-    SmsResponse sendSmsToUser(String smsCategory, int pageNo) throws Exception;
+    SmsResponse sendSmsToUser(String smsCategory) throws Exception;
 
     SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
