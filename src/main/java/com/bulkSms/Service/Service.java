@@ -25,5 +25,7 @@ public interface Service {
 
     ResponseEntity<?> getDashboardData() throws Exception;
 
+    ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo);
+
     SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 }

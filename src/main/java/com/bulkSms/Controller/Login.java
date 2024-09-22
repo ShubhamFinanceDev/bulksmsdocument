@@ -7,7 +7,6 @@ import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.EncodingUtils;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,11 +84,21 @@ public class Login {
 
     @GetMapping("/dashboard-view")
     public ResponseEntity<?> fetchDataForDashboard() throws Exception {
-        CommonResponse commonResponse = new CommonResponse();
         try {
             return service.getDashboardData();
         }catch (Exception e){
             throw new Exception(e.getMessage());
+        }
+    }
+
+    @GetMapping("/download-kit/{loanNo}")
+    public ResponseEntity<?> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo));
+        }catch (Exception e){
+            commonResponse.setMsg("Exception found :"+e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
         }
     }
 }

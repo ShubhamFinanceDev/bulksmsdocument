@@ -76,7 +76,7 @@ public class ServiceImpl implements Service {
         List<DocumentDetails> documentReaderList = new ArrayList<>();
         File sourceFolder = new File(folderPath);
 
-        jobAuditTrail.setJobName("Invoke_file");
+        jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
@@ -199,12 +199,8 @@ public class ServiceImpl implements Service {
         }
         Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
         Resource resource = resourceLoader.getResource("file:" + filePath);
-        ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            documentDetailsRepo.updateDownloadCount(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
-        }
-        return response;
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
     }
 
     @Override
@@ -236,7 +232,7 @@ public class ServiceImpl implements Service {
                         map.put("loanNumber", smsSendDetails.getLoanNumber());
                         map.put("mobileNumber", smsSendDetails.getMobileNumber());
                         map.put("timestamp", timestamp);
-                        map.put("smsFlag", "Y");
+                        map.put("smsFlag", "success");
                         content.add(map);
                     }
                 }
@@ -281,7 +277,7 @@ public class ServiceImpl implements Service {
                     map.put("loanNumber", userDetail.getLoanNumber());
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
-                    map.put("smsFlag", userDetail.getSmsFlag());
+                    map.put("smsFlag", "success");
                     userDetails.add(map);
 
                 }
@@ -336,6 +332,25 @@ public class ServiceImpl implements Service {
         return ResponseEntity.ok(dashboardResponse);
     }
 
+    public ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo) {
+        CommonResponse commonResponse = new CommonResponse();
+        System.out.println(loanNo);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+
+        if (documentReader == null) {
+            commonResponse.setMsg("File not found or invalid loanNo");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+        }
+        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
+        Resource resource = resourceLoader.getResource("file:" + filePath);
+        ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            documentDetailsRepo.updateDownloadCountBySmsLink(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
+        }
+        return response;
+    }
+
     @Override
     public SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception{
         List<Object> detailsOfUser = new ArrayList<>();
@@ -362,7 +377,7 @@ public class ServiceImpl implements Service {
                     map.put("loanNumber", userDetail.getLoanNumber());
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
-                    map.put("smsFlag", userDetail.getSmsFlag());
+                    map.put("smsFlag", "un-send");
                     detailsOfUser.add(map);
                 }
             }
@@ -373,5 +388,6 @@ public class ServiceImpl implements Service {
             throw new Exception(e.getMessage());
         }
     }
+
 
 }
