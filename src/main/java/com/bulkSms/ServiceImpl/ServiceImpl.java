@@ -341,7 +341,7 @@ public class ServiceImpl implements Service {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         File pdfFile1 = new File(projectSavePath);
-        System.out.println("list of file"+pdfFile1.listFiles());
+        System.out.println("list of file"+ pdfFile1.listFiles().length);
 
         String fileName=loanNo+".pdf";
         File pdfFile = new File(projectSavePath + fileName);
