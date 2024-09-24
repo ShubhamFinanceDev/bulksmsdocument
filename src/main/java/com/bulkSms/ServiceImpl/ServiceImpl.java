@@ -344,7 +344,7 @@ public class ServiceImpl implements Service {
         String fileName=loanNo+".pdf";
         Path filePath = Paths.get(projectSavePath+"/"+fileName);
         File pdfFile = new File(filePath+fileName);
-        System.out.println("filepath"+projectSavePath+fileName);
+        System.out.println("filepath"+filePath);
         if (pdfFile.exists()) {
             System.out.println("File not found");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
