@@ -340,9 +340,16 @@ public class ServiceImpl implements Service {
             System.out.println("File not found or invalid loanNo");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        String fileName = "/" + loanNo + ".pdf";
+        String fileName=loanNo+".pdf";
+
+        File pdfFile = new File(projectSavePath + fileName);
+        System.out.println("filepath"+projectSavePath+fileName);
+        if (pdfFile.exists()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(projectSavePath + fileName);
+        InputStream inputStream = new FileInputStream(projectSavePath+fileName);
         pdfBytes = inputStream.readAllBytes();
         // Set headers to make the response downloadable as a PDF file
         HttpHeaders headers = new HttpHeaders();
