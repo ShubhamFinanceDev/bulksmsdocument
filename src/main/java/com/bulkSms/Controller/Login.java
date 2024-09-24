@@ -97,7 +97,7 @@ public class Login {
         try {
             return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo));
         }catch (Exception e){
-            commonResponse.setMsg("Exception found :"+e.getMessage());
+            System.out.println("Exception found :"+e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
