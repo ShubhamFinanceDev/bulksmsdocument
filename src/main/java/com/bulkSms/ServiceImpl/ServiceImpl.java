@@ -342,7 +342,7 @@ public class ServiceImpl implements Service {
         }
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName=loanNo+".pdf";
-        Path filePath = Paths.get("../");
+        Path filePath = Paths.get(projectSavePath);
         File pdfFile = new File(filePath+fileName);
         System.out.println("filepath"+projectSavePath+fileName);
         if (pdfFile.exists()) {
@@ -351,7 +351,7 @@ public class ServiceImpl implements Service {
 
         }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(filePath+fileName);
+        InputStream inputStream = new FileInputStream(pdfFile);
         pdfBytes = inputStream.readAllBytes();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
