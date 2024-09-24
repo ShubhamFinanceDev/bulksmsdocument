@@ -351,7 +351,7 @@ public class ServiceImpl implements Service {
 
         }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(pdfFile);
+        InputStream inputStream = new FileInputStream(filePath+fileName);
         pdfBytes = inputStream.readAllBytes();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
