@@ -2,6 +2,7 @@ package com.bulkSms.Service;
 
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.SmsResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,11 +19,13 @@ public interface Service {
 
     ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
 
-    List<Object> sendSmsToUser(String smsCategory) throws Exception;
+    SmsResponse sendSmsToUser(String smsCategory) throws Exception;
 
-    List<Object> ListOfSendSmsToUser(String smsCategory) throws Exception;
+    SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
     ResponseEntity<?> getDashboardData() throws Exception;
 
     ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo);
+
+    SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 }

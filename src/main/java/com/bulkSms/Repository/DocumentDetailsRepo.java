@@ -16,6 +16,10 @@ import java.util.Optional;
 @Transactional
 public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long> {
 
+    @Modifying
+    @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName")
+    void updateDownloadCount(String fileName, Timestamp currentDownloadTime);
+
     @Query("select e from DocumentDetails e where e.fileName =:loanNo")
     DocumentDetails findByLoanNo(String loanNo);
 
