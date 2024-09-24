@@ -215,8 +215,7 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    String loanDetails="/sms-service/download-pdf/"+encodingUtils.encode(smsSendDetails.getLoanNumber());
-                    if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
+                    if(documentDetailsRepo.findDocumentByLoanNumber(smsSendDetails.getLoanNumber()).isPresent()){
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
