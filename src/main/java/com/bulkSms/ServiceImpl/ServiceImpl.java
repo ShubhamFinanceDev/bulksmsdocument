@@ -351,9 +351,8 @@ public class ServiceImpl implements Service {
 
         }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(projectSavePath+fileName);
+        InputStream inputStream = new FileInputStream(filePath+fileName);
         pdfBytes = inputStream.readAllBytes();
-        // Set headers to make the response downloadable as a PDF file
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", fileName);
