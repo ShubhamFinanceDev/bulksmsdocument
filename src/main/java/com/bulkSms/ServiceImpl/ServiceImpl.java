@@ -215,7 +215,7 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    if(documentDetailsRepo.findDocumentByLoanNumber(smsSendDetails.getLoanNumber()).isPresent()){
+                    if(documentDetailsRepo. findDocumentByLoanNumber(smsSendDetails.getLoanNumber()).isPresent()){
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
