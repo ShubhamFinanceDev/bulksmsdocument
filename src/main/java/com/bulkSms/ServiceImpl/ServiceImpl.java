@@ -340,11 +340,14 @@ public class ServiceImpl implements Service {
             System.out.println("File not found or invalid loanNo");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        String fileName=loanNo+".pdf";
+        File pdfFile1 = new File(projectSavePath);
+        System.out.println("list of file"+pdfFile1.listFiles());
 
+        String fileName=loanNo+".pdf";
         File pdfFile = new File(projectSavePath + fileName);
         System.out.println("filepath"+projectSavePath+fileName);
         if (pdfFile.exists()) {
+            System.out.println("File not found");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         }
