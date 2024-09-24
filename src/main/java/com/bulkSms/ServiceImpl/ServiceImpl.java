@@ -344,12 +344,12 @@ public class ServiceImpl implements Service {
         String fileName=loanNo+".pdf";
 
         Path filePath = Paths.get("../");
-        Files.list(filePath)
-                .filter(Files::isRegularFile) // Ensure only regular files are listed (not directories)
-                .forEach(file -> System.out.println(file.getFileName()));
+//        Files.list(filePath)
+//                .filter(Files::isRegularFile) // Ensure only regular files are listed (not directories)
+//                .forEach(file -> System.out.println(file.getFileName()));
 
 
-        File pdfFile = new File(projectSavePath + fileName);
+        File pdfFile = new File(filePath+fileName);
         System.out.println("filepath"+projectSavePath+fileName);
         if (pdfFile.exists()) {
             System.out.println("File not found");
