@@ -353,7 +353,7 @@ public class ServiceImpl implements Service {
         System.out.println("list of files");
         // Print the list of files
         fileList.forEach(System.out::println);
-        File pdfFile = new File(projectSavePath+"/"+fileName);
+        File pdfFile = new File("/root/bulk_sms/kit_attachement/document/0LKO2408000005089711.pdf");
         System.out.println("filepath"+filePath);
         if (pdfFile.exists()) {
             System.out.println("File not found");
