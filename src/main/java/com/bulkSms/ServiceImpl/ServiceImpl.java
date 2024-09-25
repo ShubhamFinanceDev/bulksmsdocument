@@ -342,7 +342,7 @@ public class ServiceImpl implements Service {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
-        String fileName="/root/bulk_sms/kit_attachement/document/0LKO2408000005089711.pdf";
+        String fileName="../0LKO2408000005089711.pdf";
 //        Path filePath = Paths.get(projectSavePath);
 
         File pdfFile = new File(fileName);
