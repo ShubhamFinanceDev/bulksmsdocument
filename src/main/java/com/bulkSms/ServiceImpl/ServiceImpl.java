@@ -356,6 +356,7 @@ public class ServiceImpl implements Service {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", fileName);
+        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()));
 
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
