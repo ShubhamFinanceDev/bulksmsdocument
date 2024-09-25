@@ -343,17 +343,17 @@ public class ServiceImpl implements Service {
         }
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName="../0LKO2408000005089711.pdf";
-//        Path filePath = Paths.get(projectSavePath);
+        Path filePath = Paths.get(fileName);
 
-        File pdfFile = new File(fileName);
-        System.out.println("filepath"+fileName);
+        File pdfFile = new File(String.valueOf(filePath));
+        System.out.println("filepath"+filePath);
         if (pdfFile.exists()) {
             System.out.println("File not found");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(fileName);
+        InputStream inputStream = new FileInputStream(String.valueOf(filePath));
         pdfBytes = inputStream.readAllBytes();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
