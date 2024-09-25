@@ -34,6 +34,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -342,7 +343,16 @@ public class ServiceImpl implements Service {
         }
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName=loanNo+".pdf";
-        Path filePath = Paths.get(projectSavePath+"/"+fileName);
+        Path filePath = Paths.get(projectSavePath);
+        List<String> fileList = Files.list(filePath)
+                .filter(Files::isRegularFile)  // Filters out directories
+                .map(Path::getFileName)        // Get file names only
+                .map(Path::toString)           // Convert to string
+                .collect(Collectors.toList());
+
+        System.out.println("list of files");
+        // Print the list of files
+        fileList.forEach(System.out::println);
         File pdfFile = new File(filePath+fileName);
         System.out.println("filepath"+filePath);
         if (pdfFile.exists()) {
