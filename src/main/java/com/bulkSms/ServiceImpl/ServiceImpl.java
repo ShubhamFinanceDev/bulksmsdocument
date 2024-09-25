@@ -34,7 +34,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -341,20 +340,21 @@ public class ServiceImpl implements Service {
             System.out.println("File not found or invalid loanNo");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        System.out.println("Current working directory: " + System.getProperty("user.dir"));
-        String fileName="../0LKO2408000005089711.pdf";
-        Path filePath = Paths.get(fileName);
+        File pdfFile1 = new File(projectSavePath);
+        System.out.println("list of file"+pdfFile1.listFiles());
 
-        File pdfFile = new File(String.valueOf(filePath));
-        System.out.println("filepath"+filePath);
+        String fileName=loanNo+".pdf";
+        File pdfFile = new File(projectSavePath + fileName);
+        System.out.println("filepath"+projectSavePath+fileName);
         if (pdfFile.exists()) {
             System.out.println("File not found");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         }
         byte[] pdfBytes;
-        InputStream inputStream = new FileInputStream(String.valueOf(filePath));
+        InputStream inputStream = new FileInputStream(projectSavePath+fileName);
         pdfBytes = inputStream.readAllBytes();
+        // Set headers to make the response downloadable as a PDF file
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", fileName);
