@@ -3,25 +3,26 @@ package com.bulkSms.Entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
+@Data
 @Entity
 @Table(name = "document_details")
-@Data
 public class DocumentDetails {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private long id;
-    @Column(name = "uploaded_time")
-    private LocalDateTime uploadedTime;
+    private Long id;
     @Column(name = "file_name")
     private String fileName;
+    @Column(name = "uploaded_time")
+    private Timestamp uploadedTime;
     @Column(name = "job_id")
-    private long jobId;
+    private Long jobId;
     @Column(name = "download_count")
-    private long downloadCount;
+    private Long downloadCount;
     @Column(name = "download_url")
     private String downloadUrl;
+    @Column(name = "last_download")
+    private Timestamp lastDownload;
 }

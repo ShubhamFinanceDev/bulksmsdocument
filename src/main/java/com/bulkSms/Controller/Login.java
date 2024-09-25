@@ -6,7 +6,7 @@ import com.bulkSms.Model.JwtRequest;
 import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
-import jakarta.validation.Valid;
+import com.bulkSms.Utility.EncodingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +33,8 @@ public class Login {
     private AuthenticationManager manager;
     @Autowired
     private Service service;
+    @Autowired
+    private EncodingUtils encodingUtils;
 
     @Autowired
     private JwtHelper helper;
@@ -66,7 +68,38 @@ public class Login {
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException(" Invalid Username or Password  !!");
         }
+    }
 
+    @GetMapping("/download-pdf/{loanNo}")
+    public ResponseEntity<?> downloadPdfFile(@PathVariable("loanNo") String loanNo) {
+        CommonResponse commonResponse = new CommonResponse();
+        String loanNoDecoded = encodingUtils.decode(loanNo);
+        try {
+            return service.fetchPdfFileForDownload(loanNoDecoded);
+        }catch (Exception e){
+            commonResponse.setMsg("Exception :" +e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/dashboard-view")
+    public ResponseEntity<?> fetchDataForDashboard() throws Exception {
+        try {
+            return service.getDashboardData();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @GetMapping("/download-kit/{loanNo}")
+    public ResponseEntity<?> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo));
+        }catch (Exception e){
+            commonResponse.setMsg("Exception found :"+e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+        }
     }
 
     @ExceptionHandler(BadCredentialsException.class)

@@ -59,27 +59,22 @@ public class Admin {
     }
 
     @GetMapping("/sms-process")
-    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type) throws Exception
+    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "1") int pageNo) throws Exception
     {
         try {
+
             switch (type) {
                 case "new" :
-                    List<Object> smsInformation = service.sendSmsToUser(smsCategory);
-                    if (smsInformation.isEmpty()) {
-                        SmsResponse response = new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, smsInformation);
-                        return new ResponseEntity<>(response, HttpStatus.OK);
-                    }
-                    SmsResponse response = new SmsResponse(smsInformation.size(), "success", smsInformation);
-                    return new ResponseEntity<>(response, HttpStatus.OK);
+                    return new ResponseEntity<>(service.sendSmsToUser(smsCategory), HttpStatus.OK);
 
                 case "previous" :
-                    List<Object> smsInformation1 = service.ListOfSendSmsToUser(smsCategory);
-                    SmsResponse response1 = new SmsResponse(smsInformation1.size(), "success", smsInformation1);
-                    return new ResponseEntity<>(response1, HttpStatus.OK);
+                    return new ResponseEntity<>(service.listOfSendSmsToUser(smsCategory,pageNo), HttpStatus.OK);
+
+                case "unprocessed" :
+                    return new ResponseEntity<>(service.listOfUnsendSms(smsCategory,pageNo), HttpStatus.OK);
 
                 default:
-                    SmsResponse response2 = new SmsResponse("Invalid Type provided");
-                    return new ResponseEntity<>(response2, HttpStatus.BAD_REQUEST);
+                    return new ResponseEntity<>("Invalid Type provided", HttpStatus.BAD_REQUEST);
             }
         }catch (Exception e) {
             throw new Exception(e.getMessage());
