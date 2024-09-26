@@ -31,6 +31,7 @@ public class CsvFileUtility{
                 BulkSms bulkSms=new BulkSms();
                 dataUpload.setLoanNumber(record.get(0));
                 dataUpload.setMobileNumber(record.get(1));
+                dataUpload.setSmsFlag("N");
                 dataUpload.setCertificateCategory(record.get(2));
                 bulkSms.setSmsTimeStamp(null);
                 bulkSms.setDataUpload(dataUpload);
