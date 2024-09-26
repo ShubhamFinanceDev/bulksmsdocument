@@ -33,6 +33,7 @@ public class CsvFileUtility{
                 dataUpload.setMobileNumber(record.get(1));
                 dataUpload.setCertificateCategory(record.get(2));
                 bulkSms.setSmsTimeStamp(null);
+                bulkSms.setDataUpload(dataUpload);
                 dataUpload.setBulkSms(bulkSms);
                 dataUploadList.add(dataUpload);
             }
