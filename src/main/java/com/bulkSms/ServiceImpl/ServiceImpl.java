@@ -224,7 +224,6 @@ public class ServiceImpl implements Service {
                         bulkSms.setSmsTimeStamp(timestamp);
                         bulkSms.setDataUpload(smsSendDetails);
                         bulkSmsList.add(bulkSms);
-
                         smsSendDetails.setSmsFlag("Y");
                         dataUploadRepo.save(smsSendDetails);
 
