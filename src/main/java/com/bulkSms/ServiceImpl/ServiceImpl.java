@@ -282,8 +282,9 @@ public class ServiceImpl implements Service {
 
                 }
             }
-
-            return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",userDetails);
+            double totalPages = Math.ceil((double) detailOfCount / pageSize);
+            boolean offsetLogic = pageNo < totalPages;
+            return new SmsResponse(detailOfCount,offsetLogic,"success",userDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -381,7 +382,9 @@ public class ServiceImpl implements Service {
                     detailsOfUser.add(map);
                 }
             }
-            return new SmsResponse(detailOfCount,pageNo <= (detailOfCount / pageSize),"success",detailsOfUser);
+            double totalPages = Math.ceil((double) detailOfCount / pageSize);
+            boolean offsetLogic = pageNo < totalPages;
+            return new SmsResponse(detailOfCount,offsetLogic,"success",detailsOfUser);
 
         } catch (Exception e) {
             e.printStackTrace();
