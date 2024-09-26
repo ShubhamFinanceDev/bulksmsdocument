@@ -220,13 +220,17 @@ public class ServiceImpl implements Service {
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
 
-                        BulkSms bulkSms = new BulkSms();
+                        BulkSms bulkSms = smsSendDetails.getBulkSms();
+                        if (bulkSms == null) {
+                            bulkSms = new BulkSms();
+                            bulkSms.setDataUpload(smsSendDetails);
+                        }
                         bulkSms.setSmsTimeStamp(timestamp);
-                        bulkSms.setDataUpload(smsSendDetails);
-                        bulkSmsList.add(bulkSms);
 
                         smsSendDetails.setSmsFlag("Y");
                         dataUploadRepo.save(smsSendDetails);
+
+                        bulkSmsRepo.save(bulkSms);
 
                         Map<Object, Object> map = new HashMap<>();
                         map.put("loanNumber", smsSendDetails.getLoanNumber());
@@ -236,7 +240,6 @@ public class ServiceImpl implements Service {
                         content.add(map);
                     }
                 }
-                bulkSmsRepo.saveAll(bulkSmsList);
 
             }
             if(content.isEmpty()){
