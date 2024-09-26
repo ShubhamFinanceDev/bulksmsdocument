@@ -218,7 +218,7 @@ public class ServiceImpl implements Service {
 
                     if (documentDetailsRepo.findDocumentByLoanNumber(smsSendDetails.getLoanNumber()).isPresent()) {
 
-                        smsUtility.sendTextMsgToUser(smsSendDetails);
+//                        smsUtility.sendTextMsgToUser(smsSendDetails);
 
                         BulkSms bulkSms = new BulkSms();
                         bulkSms.setSmsTimeStamp(timestamp);
