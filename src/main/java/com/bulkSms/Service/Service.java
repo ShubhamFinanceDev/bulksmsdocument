@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.IOException;
-import java.util.List;
 
 public interface Service {
     ResponseEntity<?> fetchPdf(String pdfUrl) throws IOException;
@@ -23,7 +22,7 @@ public interface Service {
 
     SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
-    ResponseEntity<?> getDashboardData() throws Exception;
+    ResponseEntity<?> getDashboardData(int pageNo) throws Exception;
 
     ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo);
 

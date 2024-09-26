@@ -83,9 +83,9 @@ public class Login {
     }
 
     @GetMapping("/dashboard-view")
-    public ResponseEntity<?> fetchDataForDashboard() throws Exception {
+    public ResponseEntity<?> fetchDataForDashboard(@RequestParam(name = "pageNo",defaultValue = "1") int pageNo) throws Exception {
         try {
-            return service.getDashboardData();
+            return service.getDashboardData(pageNo);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
