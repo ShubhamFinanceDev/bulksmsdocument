@@ -217,7 +217,7 @@ public class ServiceImpl implements Service {
                     String loanDetails="/sms-service/download-pdf/"+encodingUtils.encode(smsSendDetails.getLoanNumber());
                     if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
 
-                        smsUtility.sendTextMsgToUser(smsSendDetails);
+//                        smsUtility.sendTextMsgToUser(smsSendDetails);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
 
                         Map<Object, Object> map = new HashMap<>();
