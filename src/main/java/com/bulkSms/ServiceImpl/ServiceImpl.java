@@ -281,10 +281,9 @@ public class ServiceImpl implements Service {
 
                 }
             }
-            return new SmsResponse(detailOfCount, true, "success", userDetails);
 
 
-//            return new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", userDetails);
+            return new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", userDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
