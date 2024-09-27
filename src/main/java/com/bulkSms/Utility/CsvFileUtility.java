@@ -28,14 +28,9 @@ public class CsvFileUtility{
             List<CSVRecord> csvRecords = csvParser.getRecords();
             for (CSVRecord record : csvRecords) {
                 DataUpload dataUpload = new DataUpload();
-                BulkSms bulkSms=new BulkSms();
                 dataUpload.setLoanNumber(record.get(0));
                 dataUpload.setMobileNumber(record.get(1));
-                dataUpload.setSmsFlag("N");
                 dataUpload.setCertificateCategory(record.get(2));
-                bulkSms.setSmsTimeStamp(null);
-                bulkSms.setDataUpload(dataUpload);
-                dataUpload.setBulkSms(bulkSms);
                 dataUploadList.add(dataUpload);
             }
         }
