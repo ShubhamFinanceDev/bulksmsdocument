@@ -49,6 +49,7 @@ public class CsvFileUtility {
                     dataUpload.setSmsFlag(record.get(3));
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
+                    dataUpload.setBulkSms(bulkSms);
                     dataUploadList.add(dataUpload);
                 }
             }
