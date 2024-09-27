@@ -207,7 +207,6 @@ public class ServiceImpl implements Service {
     public SmsResponse sendSmsToUser(String smsCategory) throws Exception {
         List<Object> content = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
-        List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
 
@@ -219,18 +218,7 @@ public class ServiceImpl implements Service {
                     if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
-
-                        BulkSms bulkSms = smsSendDetails.getBulkSms();
-                        if (bulkSms == null) {
-                            bulkSms = new BulkSms();
-                            bulkSms.setDataUpload(smsSendDetails);
-                        }
-                        bulkSms.setSmsTimeStamp(timestamp);
-
-                        smsSendDetails.setSmsFlag("Y");
-                        dataUploadRepo.save(smsSendDetails);
-
-                        bulkSmsRepo.save(bulkSms);
+                        bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
 
                         Map<Object, Object> map = new HashMap<>();
                         map.put("loanNumber", smsSendDetails.getLoanNumber());
