@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
@@ -69,76 +70,87 @@ public class ServiceImpl implements Service {
 
     ;
 
-    public ResponseEntity<?> fetchPdf(String folderPath) {
+    public ResponseEntity<?> fetchPdf(String folderPath, int pageNo) {
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
-        File sourceFolder = new File(folderPath);
 
-        jobAuditTrail.setJobName("Upload-file");
-        jobAuditTrail.setStatus("in_progress");
-        jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
-        jobAuditTrailRepo.save(jobAuditTrail);
+        if (folderPath != null && !folderPath.isEmpty()) {
+            File sourceFolder = new File(folderPath);
 
-        if (!sourceFolder.exists() || !sourceFolder.isDirectory()) {
-            commonResponse.setMsg("Source folder does not exist or is not a valid directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        File[] files = sourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+            jobAuditTrail.setJobName("Upload-file");
+            jobAuditTrail.setStatus("in_progress");
+            jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
+            jobAuditTrailRepo.save(jobAuditTrail);
 
-        if (files == null || files.length == 0) {
-            commonResponse.setMsg("No PDF files found in the specified directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        String baseDownloadUrl = "/sms-service/download-pdf/";
-
-        for (File sourceFile : files) {
-            if (!sourceFile.exists() || !sourceFile.isFile()) {
-                commonResponse.setMsg("File " + sourceFile.getName() + " does not exist or is not a valid file.");
+            if (!sourceFolder.exists() || !sourceFolder.isDirectory()) {
+                commonResponse.setMsg("Source folder does not exist or is not a valid directory.");
                 jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
+            File[] files = sourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
 
-            String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
-            System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
-
-            Path sourcePath = sourceFile.toPath();
-            Path targetPath = Path.of(projectSavePath, sourcePath.getFileName().toString());
-
-            try {
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                DocumentDetails documentReader = new DocumentDetails();
-                documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
-                documentReader.setDownloadCount(0L);
-
-                documentReaderList.add(documentReader);
-
-            } catch (IOException e) {
-                commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
+            if (files == null || files.length == 0) {
+                commonResponse.setMsg("No PDF files found in the specified directory.");
                 jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
-        }
+            String baseDownloadUrl = "/sms-service/download-pdf/";
 
-        documentDetailsRepo.saveAll(documentReaderList);
-        jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-        setResponse(response);
-        commonResponse.setMsg("All PDF files copied successfully with encoded names.");
+            for (File sourceFile : files) {
+                if (!sourceFile.exists() || !sourceFile.isFile()) {
+                    commonResponse.setMsg("File " + sourceFile.getName() + " does not exist or is not a valid file.");
+                    jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+                }
+
+                String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
+                System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
+
+                Path sourcePath = sourceFile.toPath();
+                Path targetPath = Path.of(projectSavePath, sourcePath.getFileName().toString());
+
+                try {
+                    Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    DocumentDetails documentReader = new DocumentDetails();
+                    documentReader.setJobId(jobAuditTrail.getJobId());
+                    documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
+                    documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+                    documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
+                    documentReader.setDownloadCount(0L);
+
+                    documentReaderList.add(documentReader);
+
+                } catch (IOException e) {
+                    commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
+                    jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+                }
+            }
+
+            documentDetailsRepo.saveAll(documentReaderList);
+            jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+            commonResponse.setMsg("All PDF files copied successfully with encoded names.");
+            setResponse(response, pageNo);
+        } else {
+            commonResponse.setMsg("List of documents.");
+            setResponse(response, pageNo);
+        }
         response.setCommonResponse(commonResponse);
         return ResponseEntity.ok(response);
     }
 
 
-    private void setResponse(ResponseOfFetchPdf response) {
-        List<DocumentDetails> documentReaderList = documentDetailsRepo.findAll();
+    private void setResponse(ResponseOfFetchPdf response, int pageNo) {
+        int pageSize = 100;
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+
+        Page<DocumentDetails> documentReader = documentDetailsRepo.findAll(pageable);
         List<ListResponse> readerList = new ArrayList<>();
-        for (DocumentDetails reader : documentReaderList) {
+        long totalCount = documentReader.getTotalElements();
+
+        for (DocumentDetails reader : documentReader.getContent()) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setDownloadCount(reader.getDownloadCount());
@@ -146,7 +158,10 @@ public class ServiceImpl implements Service {
             listResponse.setDownloadUrl(reader.getDownloadUrl());
             readerList.add(listResponse);
         }
+
         response.setListOfPdfNames(readerList);
+        response.setTotalCount(totalCount);
+        response.setNextPage(pageNo <= totalCount / pageSize);
     }
 
     @Override
@@ -296,13 +311,13 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
         DashboardResponse dashboardResponse = new DashboardResponse();
         List<DashboardDataList> lists = new ArrayList<>();
-        int pageSize = 1;
+        int pageSize = 2;
 
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
         Long downloadCount = documentDetailsRepo.getDownloadCount();
         Long smsCount = dataUploadRepo.getSmsCount();
         List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
-        long totalCount = dataUploadRepo.findCount();
+        double totalCount = dataUploadRepo.findCount();
 
         if (dataUpload.isEmpty()) {
             commonResponse.setMsg("Data not found.");
@@ -329,8 +344,8 @@ public class ServiceImpl implements Service {
 
         dashboardResponse.setDataLists(lists);
         dashboardResponse.setSmsCount(smsCount);
-        dashboardResponse.setTotalCount(totalCount);
-        dashboardResponse.setNextPage(pageNo <= totalCount / pageSize);
+        dashboardResponse.setTotalCount((long) totalCount);
+        dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
         dashboardResponse.setDownloadCount(downloadCount);
         commonResponse.setMsg("Data found successfully.");
 

@@ -54,8 +54,8 @@ public class Admin {
     }
 
     @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl) throws IOException {
-        return service.fetchPdf(pdfUrl);
+    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl",required = false) String pdfUrl,@RequestParam(name = "pageNo") int pageNo) throws IOException {
+        return service.fetchPdf(pdfUrl, pageNo);
     }
 
     @GetMapping("/sms-process")
