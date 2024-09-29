@@ -407,7 +407,7 @@ public class ServiceImpl implements Service {
             }
             double totalPages = Math.ceil((double) detailOfCount / pageSize);
             boolean offsetLogic = pageNo < totalPages;
-            return new SmsResponse(detailOfCount, offsetLogic, "success", detailsOfUser);
+            return new SmsResponse(detailOfCount,offsetLogic,"success",detailsOfUser);
 
         } catch (Exception e) {
             e.printStackTrace();
