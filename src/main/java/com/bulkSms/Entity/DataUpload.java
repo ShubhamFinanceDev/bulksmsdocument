@@ -10,7 +10,7 @@ public class DataUpload {
     @jakarta.persistence.Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     @Column(name="id")
-    private Long  Id;
+    private Long  id;
     @Column(name="loan_number")
     private String loanNumber;
     @Column(name="mobile_number")

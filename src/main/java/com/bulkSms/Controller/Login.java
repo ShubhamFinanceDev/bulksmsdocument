@@ -90,15 +90,15 @@ public class Login {
             throw new Exception(e.getMessage());
         }
     }
-
     @GetMapping("/download-kit/{loanNo}")
-    public ResponseEntity<?> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
+    public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
         CommonResponse commonResponse = new CommonResponse();
         try {
             return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo));
         }catch (Exception e){
-            commonResponse.setMsg("Exception found :"+e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+            System.out.println("Exception found :"+e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }
