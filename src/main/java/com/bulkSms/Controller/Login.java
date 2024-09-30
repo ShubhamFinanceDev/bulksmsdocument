@@ -70,17 +70,17 @@ public class Login {
         }
     }
 
-    @GetMapping("/download-pdf/{loanNo}")
-    public ResponseEntity<?> downloadPdfFile(@PathVariable("loanNo") String loanNo) {
-        CommonResponse commonResponse = new CommonResponse();
-        String loanNoDecoded = encodingUtils.decode(loanNo);
-        try {
-            return service.fetchPdfFileForDownload(loanNoDecoded);
-        }catch (Exception e){
-            commonResponse.setMsg("Exception :" +e.getMessage());
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+//    @GetMapping("/download-pdf/{category}/{loanNo}")
+//    public ResponseEntity<?> downloadPdfFile(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo) {
+//        CommonResponse commonResponse = new CommonResponse();
+//        String loanNoDecoded = encodingUtils.decode(loanNo);
+//        try {
+//            return service.fetchPdfFileForDownload(loanNoDecoded,category);
+//        }catch (Exception e){
+//            commonResponse.setMsg("Exception :" +e.getMessage());
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
     @GetMapping("/dashboard-view")
     public ResponseEntity<?> fetchDataForDashboard() throws Exception {
@@ -90,11 +90,10 @@ public class Login {
             throw new Exception(e.getMessage());
         }
     }
-    @GetMapping("/download-kit/{loanNo}")
-    public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("loanNo") String loanNo){
-        CommonResponse commonResponse = new CommonResponse();
+    @GetMapping("/download-kit/{category}/{loanNo}")
+    public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
         try {
-            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo));
+            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo),category);
         }catch (Exception e){
             System.out.println("Exception found :"+e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

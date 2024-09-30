@@ -59,18 +59,24 @@ public class ServiceImpl implements Service {
     @Autowired
     private DataUploadRepo dataUploadRepo;
 
-    @Value("${project.save.path}")
-    private final String projectSavePath;
-    private final ResourceLoader resourceLoader;
+    @Value("${project.save.path.adhoc}")
+    private String projectSavePathAdhoc;
 
-    public ServiceImpl(ResourceLoader resourceLoader, @Value("${project.save.path}") String projectSavePath) {
-        this.resourceLoader = resourceLoader;
-        this.projectSavePath = projectSavePath;
-    }
+    @Value("${project.save.path.soa}")
+    private String projectSavePathSoa;
+    @Value("${project.save.path.intrest.certificate}")
+    private String projectSavePathInterestCertificate;
+
+    @Value("${project.save.path.payment.reminder}")
+    private String projectSavePathPaymentReminder;
+
+    private ResourceLoader resourceLoader;
+
 
     ;
 
-    public ResponseEntity<?> fetchPdf(String folderPath) {
+    public ResponseEntity<?> fetchPdf(String folderPath, String category) {
+
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
@@ -94,7 +100,7 @@ public class ServiceImpl implements Service {
             jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
-        String baseDownloadUrl = "/sms-service/download-pdf/";
+
 
         for (File sourceFile : files) {
             if (!sourceFile.exists() || !sourceFile.isFile()) {
@@ -103,27 +109,23 @@ public class ServiceImpl implements Service {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
 
-            String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
-            System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
-
-            Path sourcePath = sourceFile.toPath();
-            Path targetPath = Path.of(projectSavePath, sourcePath.getFileName().toString());
-
             try {
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                DocumentDetails documentReader = new DocumentDetails();
-                documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
-                documentReader.setDownloadCount(0L);
+                if(category.contains("ADHOC")) {
+                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathAdhoc);
+                } else if (category.contains("SOA")) {
+                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathSoa);
 
-                documentReaderList.add(documentReader);
+                } else if (category.contains("INTEREST_CERTIFICATE")) {
+                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathInterestCertificate);
 
-            } catch (IOException e) {
+                } else if (category.contains("Reminder_Payment")) {
+                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathPaymentReminder);
+                }
+            } catch (Exception e) {
                 commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
                 jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+
             }
         }
 
@@ -135,6 +137,21 @@ public class ServiceImpl implements Service {
         return ResponseEntity.ok(response);
     }
 
+    private void copyFileInDestinationPath(File sourceFile, JobAuditTrail jobAuditTrail, List<DocumentDetails> documentReaderList,String destinationPath) throws Exception {
+        String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
+        System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
+        Path sourcePath = sourceFile.toPath();
+        Path targetPath = Path.of(destinationPath, sourcePath.getFileName().toString());
+        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        DocumentDetails documentReader = new DocumentDetails();
+        documentReader.setJobId(jobAuditTrail.getJobId());
+        documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
+        documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+//            documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
+        documentReader.setDownloadCount(0L);
+        documentReaderList.add(documentReader);
+
+    }
 
     private void setResponse(ResponseOfFetchPdf response) {
         List<DocumentDetails> documentReaderList = documentDetailsRepo.findAll();
@@ -188,21 +205,22 @@ public class ServiceImpl implements Service {
         registerUserDetails.setRole(role.getRole());
     }
 
-    @Override
-    public ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception {
-        CommonResponse commonResponse = new CommonResponse();
-        System.out.println(loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
-
-        if (documentReader == null) {
-            commonResponse.setMsg("File not found or invalid loanNo");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
-        Resource resource = resourceLoader.getResource("file:" + filePath);
-
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
-    }
+//    @Override
+//    public ResponseEntity<?> fetchPdfFileForDownload(String loanNo,String category) throws Exception {
+//        CommonResponse commonResponse = new CommonResponse();
+//        System.out.println(loanNo);
+//        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+//
+//        if (documentReader == null) {
+//            commonResponse.setMsg("File not found or invalid loanNo");
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+//        }
+//        if(category.contains("ADHOC"))
+//        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
+//        Resource resource = resourceLoader.getResource("file:" + filePath);
+//
+//        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
+//    }
 
     @Override
     public ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception {
@@ -215,9 +233,9 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    if (documentDetailsRepo.findByLoanNo(smsSendDetails.getLoanNumber()) !=null) {
+                    if (documentDetailsRepo.findByLoanNo(smsSendDetails.getLoanNumber()) != null) {
 
-//                        smsUtility.sendTextMsgToUser(smsSendDetails);
+                        smsUtility.sendTextMsgToUser(smsSendDetails);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
 
                         Map<Object, Object> map = new HashMap<>();
@@ -330,7 +348,7 @@ public class ServiceImpl implements Service {
         return ResponseEntity.ok(dashboardResponse);
     }
 
-    public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo) throws Exception {
+    public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
         System.out.println(loanNo);
         DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
 
@@ -338,9 +356,30 @@ public class ServiceImpl implements Service {
             System.out.println("File not found or invalid loanNo");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName = loanNo + ".pdf";
-        Path filePath = Paths.get(projectSavePath);
+
+        if (category.contains("ADHOC")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathAdhoc);
+
+        } else if (category.contains("SOA")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathSoa);
+
+        } else if (category.contains("INTEREST_CERTIFICATE")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathInterestCertificate);
+
+
+        } else if (category.contains("Reminder_Payment")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder);
+
+        }
+
+        return null;
+    }
+
+    private ResponseEntity<byte[]> generatePdfDocument(String loanNo, String fileName, String projectSavePathPaymentReminder) throws IOException {
+        Path filePath = Paths.get(projectSavePathPaymentReminder);
         File pdfFile = new File(filePath + fileName);
         System.out.println("filepath" + filePath);
         if (pdfFile.exists()) {
@@ -357,7 +396,6 @@ public class ServiceImpl implements Service {
         documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()));
 
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
-
     }
 
     @Override
