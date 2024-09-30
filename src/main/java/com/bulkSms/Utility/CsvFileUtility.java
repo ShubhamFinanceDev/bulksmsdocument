@@ -34,7 +34,8 @@ public class CsvFileUtility {
             List<CSVRecord> csvRecords = csvParser.getRecords();
             for (CSVRecord record : csvRecords) {
                 String loanNumber = record.get(0);
-                Optional<DataUpload> existingDataUpload = dataUploadRepo.findByloanNumber(loanNumber);
+                String certificateCategory = record.get(2);
+                Optional<DataUpload> existingDataUpload = dataUploadRepo.findByloanNumber(loanNumber,certificateCategory);
 
                 if (existingDataUpload.isPresent()) {
                     DataUpload dataUpload = existingDataUpload.get();

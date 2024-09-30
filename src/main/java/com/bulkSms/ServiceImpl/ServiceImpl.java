@@ -219,19 +219,17 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public SmsResponse sendSmsToUser(String smsCategory) throws Exception {
+    public ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception {
         List<Object> content = new ArrayList<>();
         LocalDateTime timestamp = LocalDateTime.now();
-        List<BulkSms> bulkSmsList = new ArrayList<>();
 
         try {
-
+            CommonResponse commonResponse = new CommonResponse();
             List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    String loanDetails = "/sms-service/download-pdf/" + encodingUtils.encode(smsSendDetails.getLoanNumber());
-                    if (documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()) {
+                    if (documentDetailsRepo.findByLoanNo(smsSendDetails.getLoanNumber()) !=null) {
 
 //                        smsUtility.sendTextMsgToUser(smsSendDetails);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
@@ -247,9 +245,12 @@ public class ServiceImpl implements Service {
 
             }
             if (content.isEmpty()) {
-                return new SmsResponse(0, "No unsent SMS found for category: " + smsCategory, content);
+                commonResponse.setMsg("Data not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             } else {
-                return new SmsResponse(content.size(), "success", content);
+                commonResponse.setMsg("Success");
+                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(content.size(), commonResponse.getMsg(), content));
+
             }
 
         } catch (Exception e) {
@@ -259,11 +260,12 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception {
+    public ResponseEntity<?> listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
         long detailOfCount = 0;
         int pageSize = 100;
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
             Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
@@ -278,7 +280,7 @@ public class ServiceImpl implements Service {
                 detailOfCount = dataUploadRepo.findCountWithSmsCategory(smsCategory);
             }
 
-            if (!userDetailsList.isEmpty()) {
+            if (!userDetailsList.isEmpty() && detailOfCount > 0) {
                 for (DataUpload userDetail : userDetailsList) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
@@ -288,10 +290,12 @@ public class ServiceImpl implements Service {
                     userDetails.add(map);
 
                 }
+                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", userDetails));
+
+            } else {
+                commonResponse.setMsg("Data not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
-            double totalPages = Math.ceil((double) detailOfCount / pageSize);
-            boolean offsetLogic = pageNo < totalPages;
-            return new SmsResponse(detailOfCount, offsetLogic, "success", userDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -376,11 +380,12 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception {
+    public ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception {
         List<Object> detailsOfUser = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
         long detailOfCount = 0;
         int pageSize = 100;
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
             Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
@@ -395,7 +400,7 @@ public class ServiceImpl implements Service {
                 detailOfCount = dataUploadRepo.findUnsendSmsCountByCategory(smsCategory);
             }
 
-            if (!unsendSmsDetails.isEmpty()) {
+            if (!unsendSmsDetails.isEmpty() && detailOfCount > 0) {
                 for (DataUpload userDetail : unsendSmsDetails) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
@@ -404,10 +409,12 @@ public class ServiceImpl implements Service {
                     map.put("smsFlag", "un-send");
                     detailsOfUser.add(map);
                 }
+                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", detailsOfUser));
+
+            } else {
+                commonResponse.setMsg("Data not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
-            double totalPages = Math.ceil((double) detailOfCount / pageSize);
-            boolean offsetLogic = pageNo < totalPages;
-            return new SmsResponse(detailOfCount,offsetLogic,"success",detailsOfUser);
 
         } catch (Exception e) {
             e.printStackTrace();

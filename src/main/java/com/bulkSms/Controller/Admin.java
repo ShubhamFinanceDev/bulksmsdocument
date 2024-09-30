@@ -65,13 +65,13 @@ public class Admin {
 
             switch (type) {
                 case "new" :
-                    return new ResponseEntity<>(service.sendSmsToUser(smsCategory), HttpStatus.OK);
+                    return (service.sendSmsToUser(smsCategory));
 
                 case "previous" :
-                    return new ResponseEntity<>(service.listOfSendSmsToUser(smsCategory,pageNo), HttpStatus.OK);
+                    return service.listOfSendSmsToUser(smsCategory,pageNo);
 
                 case "unprocessed" :
-                    return new ResponseEntity<>(service.listOfUnsendSms(smsCategory,pageNo), HttpStatus.OK);
+                    return service.listOfUnsendSms(smsCategory,pageNo);
 
                 default:
                     return new ResponseEntity<>("Invalid Type provided", HttpStatus.BAD_REQUEST);

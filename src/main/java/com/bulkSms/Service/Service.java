@@ -18,13 +18,13 @@ public interface Service {
 
     ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
 
-    SmsResponse sendSmsToUser(String smsCategory) throws Exception;
+   ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception;
 
-    SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
+    ResponseEntity<?> listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
     ResponseEntity<?> getDashboardData(int pageNo) throws Exception;
 
     ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo) throws Exception;
 
-    SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
+    ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 }
