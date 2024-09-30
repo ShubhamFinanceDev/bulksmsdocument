@@ -335,7 +335,7 @@ public class ServiceImpl implements Service {
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
         System.out.println(loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo,category);
 
         if (documentReader == null) {
             System.out.println("File not found or invalid loanNo");
