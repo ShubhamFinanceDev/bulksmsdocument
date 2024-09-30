@@ -118,7 +118,7 @@ public class ServiceImpl implements Service {
                 documentReader.setJobId(jobAuditTrail.getJobId());
                 documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
                 documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-//            documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
+                documentReader.setCategory(category);
                 documentReader.setDownloadCount(0L);
                 documentReaderList.add(documentReader);
 
@@ -132,21 +132,20 @@ public class ServiceImpl implements Service {
 
         documentDetailsRepo.saveAll(documentReaderList);
         jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-        setResponse(response);
+        setResponse(response,documentReaderList);
         commonResponse.setMsg("All PDF files copied successfully with encoded names.");
         response.setCommonResponse(commonResponse);
         return ResponseEntity.ok(response);
     }
 
-    private void setResponse(ResponseOfFetchPdf response) {
-        List<DocumentDetails> documentReaderList = documentDetailsRepo.findAll();
+    private void setResponse(ResponseOfFetchPdf response,List<DocumentDetails> documentDetails) {
+
         List<ListResponse> readerList = new ArrayList<>();
-        for (DocumentDetails reader : documentReaderList) {
+        for (DocumentDetails reader : documentDetails) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setDownloadCount(reader.getDownloadCount());
             listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
-            listResponse.setDownloadUrl(reader.getDownloadUrl());
             readerList.add(listResponse);
         }
         response.setListOfPdfNames(readerList);
