@@ -132,9 +132,11 @@ public class ServiceImpl implements Service {
 
         documentDetailsRepo.saveAll(documentReaderList);
         jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-        setResponse(response,documentReaderList);
+        List<ListResponse> documentReaderList1=new ArrayList<>();
+        documentReaderList1.containsAll(documentReaderList);
         commonResponse.setMsg("All PDF files copied successfully with encoded names.");
         response.setCommonResponse(commonResponse);
+        response.setListOfPdfNames(documentReaderList1);
         return ResponseEntity.ok(response);
     }
 
@@ -144,8 +146,8 @@ public class ServiceImpl implements Service {
         for (DocumentDetails reader : documentDetails) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
-            listResponse.setDownloadCount(reader.getDownloadCount());
             listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
+            listResponse.setCategory(reader.getCategory());
             readerList.add(listResponse);
         }
         response.setListOfPdfNames(readerList);
