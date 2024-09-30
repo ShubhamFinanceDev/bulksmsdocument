@@ -54,7 +54,7 @@ public class Admin {
     }
 
     @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl ,@RequestParam(name="category") String category,@RequestParam(defaultValue = "1") int pageNo) throws IOException {
+    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl ,@RequestParam(name="category") String category) throws IOException {
         return service.fetchPdf(pdfUrl,category);
     }
 
