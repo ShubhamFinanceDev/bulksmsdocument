@@ -72,8 +72,12 @@ public class ServiceImpl implements Service {
 
     private ResourceLoader resourceLoader;
 
-
-    ;
+    private String destinationStorage(String category) {
+        return category.contains("ADHOC") ? projectSavePathAdhoc :
+                category.contains("SOA") ? projectSavePathSoa :
+                        category.contains("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+                                category.contains("Reminder_Payment") ? projectSavePathPaymentReminder : null;
+    }
 
     public ResponseEntity<?> fetchPdf(String folderPath, String category) {
 
@@ -82,6 +86,7 @@ public class ServiceImpl implements Service {
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
         File sourceFolder = new File(folderPath);
+        String copyPath = destinationStorage(category);
 
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
@@ -103,24 +108,20 @@ public class ServiceImpl implements Service {
 
 
         for (File sourceFile : files) {
-            if (!sourceFile.exists() || !sourceFile.isFile()) {
-                commonResponse.setMsg("File " + sourceFile.getName() + " does not exist or is not a valid file.");
-                jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-            }
-
             try {
-                if(category.contains("ADHOC")) {
-                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathAdhoc);
-                } else if (category.contains("SOA")) {
-                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathSoa);
+                String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
+                System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
+                Path sourcePath = sourceFile.toPath();
+                Path targetPath = Path.of(copyPath, sourcePath.getFileName().toString());
+                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                DocumentDetails documentReader = new DocumentDetails();
+                documentReader.setJobId(jobAuditTrail.getJobId());
+                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
+                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+//            documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
+                documentReader.setDownloadCount(0L);
+                documentReaderList.add(documentReader);
 
-                } else if (category.contains("INTEREST_CERTIFICATE")) {
-                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathInterestCertificate);
-
-                } else if (category.contains("Reminder_Payment")) {
-                    copyFileInDestinationPath(sourceFile, jobAuditTrail, documentReaderList,projectSavePathPaymentReminder);
-                }
             } catch (Exception e) {
                 commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
                 jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
@@ -135,22 +136,6 @@ public class ServiceImpl implements Service {
         commonResponse.setMsg("All PDF files copied successfully with encoded names.");
         response.setCommonResponse(commonResponse);
         return ResponseEntity.ok(response);
-    }
-
-    private void copyFileInDestinationPath(File sourceFile, JobAuditTrail jobAuditTrail, List<DocumentDetails> documentReaderList,String destinationPath) throws Exception {
-        String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
-        System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
-        Path sourcePath = sourceFile.toPath();
-        Path targetPath = Path.of(destinationPath, sourcePath.getFileName().toString());
-        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-        DocumentDetails documentReader = new DocumentDetails();
-        documentReader.setJobId(jobAuditTrail.getJobId());
-        documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-        documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-//            documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
-        documentReader.setDownloadCount(0L);
-        documentReaderList.add(documentReader);
-
     }
 
     private void setResponse(ResponseOfFetchPdf response) {
