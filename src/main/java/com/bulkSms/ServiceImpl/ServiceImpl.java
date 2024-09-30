@@ -137,6 +137,7 @@ public class ServiceImpl implements Service {
         commonResponse.setMsg("All PDF files copied successfully with encoded names.");
         response.setCommonResponse(commonResponse);
         response.setListOfPdfNames(documentReaderList1);
+        response.setDownloadCount((long) documentReaderList1.size());
         return ResponseEntity.ok(response);
     }
 
