@@ -182,11 +182,8 @@ public class ServiceImpl implements Service {
         String roleName = registerUserDetails.getRole() != null ? registerUserDetails.getRole() : "ROLE_USER";
         role.setRole(roleName);
         role.setUserMaster(userDetails);
-
         userDetails.setRoleMaster(role);
-
         userDetailRepo.save(userDetails);
-
         registerUserDetails.setRole(role.getRole());
     }
 
