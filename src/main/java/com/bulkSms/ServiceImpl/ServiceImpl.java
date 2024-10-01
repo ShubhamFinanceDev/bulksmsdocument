@@ -218,7 +218,7 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    if (documentDetailsRepo.findByLoanNo(smsSendDetails.getLoanNumber()) != null) {
+                    if (documentDetailsRepo.findByLoanNoAndCategory(smsSendDetails.getLoanNumber(),smsCategory)!=null) {
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());

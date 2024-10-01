@@ -20,8 +20,6 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName")
     void updateDownloadCount(String fileName, Timestamp currentDownloadTime);
 
-    @Query("select e from DocumentDetails e where e.fileName =:loanNo")
-    DocumentDetails findByLoanNo(String loanNo);
     @Query("select e from DocumentDetails e where e.fileName =:loanNo and e.category=:category")
     DocumentDetails findByLoanNoAndCategory(String loanNo,String category);
 
