@@ -12,6 +12,7 @@ import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
 import com.bulkSms.Utility.SmsUtility;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -23,13 +24,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -79,78 +78,78 @@ public class ServiceImpl implements Service {
                                 category.contains("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
-    public ResponseEntity<?> fetchPdf(String folderPath, String category) {
+    @Transactional
+    public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
 
         CommonResponse commonResponse = new CommonResponse();
+        DocumentDetails documentReader = new DocumentDetails();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
-        File sourceFolder = new File(folderPath);
         String copyPath = destinationStorage(category);
-
+        long count = 0L;
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
 
-        if (!sourceFolder.exists() || !sourceFolder.isDirectory()) {
-            commonResponse.setMsg("Source folder does not exist or is not a valid directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        File[] files = sourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
+            for (Path subDir : directoryStream) {
+                File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
 
-        if (files == null || files.length == 0) {
-            commonResponse.setMsg("No PDF files found in the specified directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
+                if (pdfFiles.length > 0) {
+                    PDFMergerUtility pdfMerger = new PDFMergerUtility();
+                    for (File pdfFile : pdfFiles) {
+                        pdfMerger.addSource(pdfFile);
+                    }
+                    Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
+                    pdfMerger.setDestinationFileName(mergedPDFPath.toString());
+                    pdfMerger.mergeDocuments(null); // Merges the PDFs
+                    System.out.println("Merged and copied PDF to: " + mergedPDFPath);
 
+                    documentReader.setJobId(jobAuditTrail.getJobId());
+                    documentReader.setFileName(String.valueOf(subDir.getFileName()));
+                    documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+                    documentReader.setCategory(category);
+                    documentReader.setDownloadCount(0L);
+                    documentReaderList.add(documentReader);
+                    count++;
+                    documentDetailsRepo.save(documentReader);
 
-        for (File sourceFile : files) {
-            try {
-                String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
-                System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
-                Path sourcePath = sourceFile.toPath();
-                Path targetPath = Path.of(copyPath, sourcePath.getFileName().toString());
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                DocumentDetails documentReader = new DocumentDetails();
-                documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                documentReader.setCategory(category);
-                documentReader.setDownloadCount(0L);
-                documentReaderList.add(documentReader);
+                    jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+                    commonResponse.setMsg("All PDF files copied successfully.");
 
-            } catch (Exception e) {
-                commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
-                jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
-
+                }
             }
+            setJobResponse(response, jobAuditTrail.getJobId());
+            response.setCommonResponse(commonResponse);
+            response.setDownloadCount(count);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            commonResponse.setMsg("An error occurred while copying the file " + e.getMessage());
+            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+
         }
 
-        documentDetailsRepo.saveAll(documentReaderList);
-        jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-        commonResponse.setMsg("All PDF files copied successfully with encoded names.");
-        setResponse(response,documentReaderList);
-        response.setCommonResponse(commonResponse);
-        return ResponseEntity.ok(response);
     }
 
-    private void setResponse(ResponseOfFetchPdf response,List<DocumentDetails> documentDetails) {
+
+    private void setJobResponse(ResponseOfFetchPdf responseOfFetchPdf, Long jobId) {
+        List<DocumentDetails> latestCopedFile = documentDetailsRepo.finByJobId(jobId);
 
         List<ListResponse> readerList = new ArrayList<>();
-        for (DocumentDetails reader : documentDetails) {
+        for (DocumentDetails reader : latestCopedFile) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
             listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
             listResponse.setCategory(reader.getCategory());
             readerList.add(listResponse);
         }
-        response.setDownloadCount((long) readerList.size());
-        response.setListOfPdfNames(readerList);
+        responseOfFetchPdf.setListOfPdfNames(readerList);
     }
+
 
     @Override
     public ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception {
@@ -215,7 +214,7 @@ public class ServiceImpl implements Service {
             if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
                 for (DataUpload smsSendDetails : smsCategoryDetails) {
 
-                    if (documentDetailsRepo.findByLoanNoAndCategory(smsSendDetails.getLoanNumber(),smsCategory)!=null) {
+                    if (documentDetailsRepo.findByLoanNoAndCategory(smsSendDetails.getLoanNumber(), smsCategory) != null) {
 
                         smsUtility.sendTextMsgToUser(smsSendDetails);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
@@ -310,7 +309,7 @@ public class ServiceImpl implements Service {
             dashboardData.setPhoneNo(data.getMobileNumber());
             dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
             dashboardData.setLoanNo(data.getLoanNumber());
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(),data.getCertificateCategory());
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
             if (documentDetails.isPresent() && (documentDetails.get().getDownloadCount() > 0)) {
                 dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
                 dashboardData.setLastDownload(documentDetails.get().getLastDownload());
@@ -332,7 +331,7 @@ public class ServiceImpl implements Service {
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
         System.out.println(loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo,category);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
 
         if (documentReader == null) {
             System.out.println("File not found or invalid loanNo");
