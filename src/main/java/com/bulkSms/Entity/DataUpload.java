@@ -17,7 +17,7 @@ public class DataUpload {
     private String mobileNumber;
     @Column(name = "Certificate_Category")
     private String certificateCategory;
-    @Column(name = "sms-flag")
+    @Column(name = "sms_flag")
     private String smsFlag;
 
     @OneToOne(mappedBy = "dataUpload", cascade = CascadeType.ALL)

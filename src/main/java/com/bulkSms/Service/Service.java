@@ -10,13 +10,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface Service {
-    ResponseEntity<?> fetchPdf(String pdfUrl, int pageNo) throws IOException;
+    ResponseEntity<?> fetchPdf(String pdfUrl, String category, int pageNo) throws IOException;
 
     ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception;
 
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 
-    ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception;
+//    ResponseEntity<?> fetchPdfFileForDownload(String loanNo,String category) throws Exception;
 
    ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception;
 
@@ -24,7 +24,7 @@ public interface Service {
 
     ResponseEntity<?> getDashboardData(int pageNo) throws Exception;
 
-    ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo) throws Exception;
+    ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo,String category) throws Exception;
 
     ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 }

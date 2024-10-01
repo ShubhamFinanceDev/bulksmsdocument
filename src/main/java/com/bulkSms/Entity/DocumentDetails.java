@@ -21,8 +21,8 @@ public class DocumentDetails {
     private Long jobId;
     @Column(name = "download_count")
     private Long downloadCount;
-    @Column(name = "download_url")
-    private String downloadUrl;
+    @Column(name = "category")
+    private String category;
     @Column(name = "last_download")
     private Timestamp lastDownload;
 }
