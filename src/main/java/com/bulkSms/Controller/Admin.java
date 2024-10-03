@@ -36,9 +36,11 @@ public class Admin {
             commonResponse.setMsg("User successfully registered!");
             return new ResponseEntity<>(commonResponse, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
+            log.error( e.getMessage());
             throw new IllegalArgumentException(e.getMessage());
         }
         catch (Exception e) {
+            log.error( e.getMessage());
             throw new Exception(e.getMessage());
         }
     }
@@ -47,8 +49,10 @@ public class Admin {
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();
         try {
-            return ResponseEntity.ok(service.save(file).getBody());
+            log.info("file upload job invoked");
+            return ResponseEntity.ok(service.csvFileUploadSave(file).getBody());
         } catch (Exception e) {
+            log.error( e.getMessage());
             commonResponse.setMsg("Technical issue : " + e.getMessage());
             return new ResponseEntity<>(commonResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -79,6 +83,7 @@ public class Admin {
                     return new ResponseEntity<>("Invalid Type provided", HttpStatus.BAD_REQUEST);
             }
         }catch (Exception e) {
+            log.error( e.getMessage());
             throw new Exception(e.getMessage());
         }
     }

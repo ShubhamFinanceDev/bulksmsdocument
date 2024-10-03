@@ -13,7 +13,7 @@ import java.util.List;
 public interface Service {
     ResponseEntity<?> fetchPdf(String pdfUrl,String category) throws IOException;
 
-    ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception;
+    ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception;
 
     void registerNewUser(RegistrationDetails registerUserDetails) throws Exception;
 

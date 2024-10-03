@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @org.springframework.stereotype.Service
@@ -156,17 +157,42 @@ public class ServiceImpl implements Service {
         responseOfFetchPdf.setListOfPdfNames(readerList);
     }
 
-
+    @Transactional
     @Override
-    public ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception {
+    public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-
+        List<DataUpload> filteredData = new ArrayList<>();
         if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.csvBulksms(file.getInputStream());
-            dataUploadRepo.saveAll(dataUploadList);
-            commonResponse.setMsg("Csv file upload successfully");
+            List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream());
+            if (dataUploadList.size() > 0) {
+                log.info("csv file read successfully {} row size", dataUploadList.size());
+                Set<String> seenCombinations = new HashSet<>();
+                filteredData = dataUploadList.stream()
+                        // Filter the list based on unique loanNumber and certificateCategory
+                        .filter(dataUpload -> seenCombinations.add(dataUpload.getLoanNumber() + "-" + dataUpload.getCertificateCategory()))
+                        .collect(Collectors.toList());
+                log.info("duplicate entry removed  {} updated row size", filteredData.size());
+
+                int batchSize = 5000;  // Define the size of each batch
+                int totalSize = filteredData.size();
+
+                // Loop through the list and save in batches
+                for (int start = 0; start < totalSize; start += batchSize) {
+
+                    int end = Math.min(start + batchSize, totalSize);
+                    log.info("batch executed inserting data index from {} to {}", start, end);
+
+                    List<DataUpload> dataUploadListBatch = filteredData.subList(start, end);
+                    dataUploadRepo.saveAll(dataUploadListBatch); // Save each sublist (batch) in a separate transaction
+                    log.info("batch successfully executed ");
+
+                }
+                log.info("file upload job completed");
+                commonResponse.setMsg("File uploaded successfully total records created "+filteredData.size());
+
+            }
         } else {
-            commonResponse.setMsg("File is not a csv file");
+            commonResponse.setMsg("File is not a csv file or empty");
         }
         return ResponseEntity.ok(commonResponse);
     }
