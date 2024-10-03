@@ -250,7 +250,7 @@ public class ServiceImpl implements Service {
                 if (smsCategoryDetails.hasContent()) {
                     List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
                     log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
-                    executeSmsServiceThread(dataUploadList, smsCategory, content); //start send sms thread
+                    executeSmsServiceThread(dataUploadList, content); //start send sms thread
                     batchCount++;
 
                 } else {
@@ -274,7 +274,7 @@ public class ServiceImpl implements Service {
     }
 
 
-    private void executeSmsServiceThread(List<DataUpload> dataUploadList, String smsCategory, List<Object> content) throws Exception {
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
         log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -301,7 +301,7 @@ public class ServiceImpl implements Service {
                 for (DataUpload element : sublist) {
                     try {
 
-//                        smsUtility.sendTextMsgToUser(element);
+                        smsUtility.sendTextMsgToUser(element);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
                         System.out.println("sms send");
                         Map<Object, Object> map = new HashMap<>();
