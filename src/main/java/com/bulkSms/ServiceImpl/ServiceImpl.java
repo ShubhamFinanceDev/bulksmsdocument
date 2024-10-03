@@ -303,7 +303,6 @@ public class ServiceImpl implements Service {
 
                         smsUtility.sendTextMsgToUser(element);
                         bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
-                        System.out.println("sms send");
                         Map<Object, Object> map = new HashMap<>();
                         map.put("loanNumber", element.getLoanNumber());
                         map.put("mobileNumber", element.getMobileNumber());
@@ -384,13 +383,13 @@ public class ServiceImpl implements Service {
         List<DashboardDataList> lists = new ArrayList<>();
         Map<String, Long> smsCountByCategory = new HashMap<>();
         Map<String, Long> downloadCountByCategory = new HashMap<>();
-        int pageSize = 2;
+        int pageSize = 100;
 
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
         List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
         List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
         List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
-        double totalCount = dataUploadRepo.findCount();
+        double totalCount = dataUploadRepo.listTotalDownloadCount();
 
         if (dataUpload.isEmpty()) {
             commonResponse.setMsg("Data not found.");
@@ -401,8 +400,7 @@ public class ServiceImpl implements Service {
         setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
 
         for (DataUpload data : dataUpload) {
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo
-                    .findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
 
             if (documentDetails.isPresent() && documentDetails.get().getDownloadCount() > 0) {
                 DashboardDataList dashboardData = getDashboardDataList(data, documentDetails);
