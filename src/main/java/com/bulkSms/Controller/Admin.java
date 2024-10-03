@@ -3,6 +3,7 @@ package com.bulkSms.Controller;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Service.Service;
@@ -17,7 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 public class Admin {
@@ -65,6 +66,7 @@ public class Admin {
 
             switch (type) {
                 case "new" :
+                    log.info("Sms process invoked fro category {}", smsCategory);
                     return (service.sendSmsToUser(smsCategory));
 
                 case "previous" :
