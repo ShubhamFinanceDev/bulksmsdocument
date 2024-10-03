@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 @Slf4j
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
@@ -222,7 +223,7 @@ public class ServiceImpl implements Service {
                 Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory, pageable);
                 if (smsCategoryDetails.hasContent()) {
                     List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
-                    log.info("List size fetched {} for batchCount {}",dataUploadList.size(),batchCount);
+                    log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
                     executeSmsServiceThread(dataUploadList, smsCategory, content); //start send sms thread
                     batchCount++;
 
@@ -249,16 +250,16 @@ public class ServiceImpl implements Service {
 
     private void executeSmsServiceThread(List<DataUpload> dataUploadList, String smsCategory, List<Object> content) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
-        log.info("Snd-sms thread service started for list size {}", dataUploadList.size() );
+        log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        log.info("Current available processors {}" , availableProcessors);
+        log.info("Current available processors {}", availableProcessors);
 
         int listSize = dataUploadList.size();
         int batchSize = 500; // Adjust as needed based on memory or processing needs
         int numBatches = (int) Math.ceil((double) listSize / batchSize);  // Total number of batches
         int numThreads = Math.min(numBatches, availableProcessors * 2);
 
-        log.info("No of threads set in poll size {}",numThreads);
+        log.info("No of threads set in poll size {}", numThreads);
         // Create a fixed thread pool
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         int start = 0;
@@ -268,7 +269,7 @@ public class ServiceImpl implements Service {
             int end = Math.min(start + batchSize, dataUploadList.size());
             // Sublist for each thread to process
             List<DataUpload> sublist = dataUploadList.subList(start, end);
-            log.info("Thread {} execution initiated and processing list index from {} to {}",numThreads,start,end);
+            log.info("Thread {} execution initiated and processing list index from {} to {}", numThreads, start, end);
             // Submit a task to process this sublist
             executorService.submit(() -> {
                 for (DataUpload element : sublist) {
@@ -290,7 +291,7 @@ public class ServiceImpl implements Service {
                     }
 
                 }
-                log.info("Thread {} completed successfully sms sent successfully {}  ",numThreads,sublist.size());
+                log.info("Thread {} completed successfully sms sent successfully {}  ", numThreads, sublist.size());
 
             });
 
@@ -350,45 +351,67 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ResponseEntity<?> getDashboardData() throws Exception {
+    public ResponseEntity<?> getDashboardData(int pageNo) throws Exception {
 
         CommonResponse commonResponse = new CommonResponse();
         DashboardResponse dashboardResponse = new DashboardResponse();
         List<DashboardDataList> lists = new ArrayList<>();
+        Map<String, Long> smsCountByCategory = new HashMap<>();
+        Map<String, Long> downloadCountByCategory = new HashMap<>();
+        int pageSize = 2;
 
-        Long downloadCount = documentDetailsRepo.getDownloadCount();
-        Long smsCount = dataUploadRepo.getSmsCount();
-        List<DataUpload> dataUpload = dataUploadRepo.findByType();
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+        List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
+        List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
+        List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
+        double totalCount = dataUploadRepo.findCount();
 
         if (dataUpload.isEmpty()) {
             commonResponse.setMsg("Data not found.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
 
-        for (DataUpload data : dataUpload) {
-            DashboardDataList dashboardData = new DashboardDataList();
-            dashboardData.setCategory(data.getCertificateCategory());
-            dashboardData.setPhoneNo(data.getMobileNumber());
-            dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
-            dashboardData.setLoanNo(data.getLoanNumber());
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
-            if (documentDetails.isPresent() && (documentDetails.get().getDownloadCount() > 0)) {
-                dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
-                dashboardData.setLastDownload(documentDetails.get().getLastDownload());
-                lists.add(dashboardData);
+        setDownloadAndSmsCount(smsCountByCategoryData, smsCountByCategory);
+        setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
 
+        for (DataUpload data : dataUpload) {
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo
+                    .findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
+
+            if (documentDetails.isPresent() && documentDetails.get().getDownloadCount() > 0) {
+                DashboardDataList dashboardData = getDashboardDataList(data, documentDetails);
+                lists.add(dashboardData);
             } else {
                 System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
             }
-
         }
 
         dashboardResponse.setDataLists(lists);
-        dashboardResponse.setSmsCount(smsCount);
-        dashboardResponse.setDownloadCount(downloadCount);
+        dashboardResponse.setTotalCount((long) totalCount);
+        dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
+        dashboardResponse.setSmsCountByCategory(smsCountByCategory);
+        dashboardResponse.setDownloadCountByCategory(downloadCountByCategory);
         commonResponse.setMsg("Data found successfully.");
 
         return ResponseEntity.ok(dashboardResponse);
+    }
+
+    private static DashboardDataList getDashboardDataList(DataUpload data, Optional<DocumentDetails> documentDetails) {
+        DashboardDataList dashboardData = new DashboardDataList();
+        dashboardData.setCategory(data.getCertificateCategory());
+        dashboardData.setPhoneNo(data.getMobileNumber());
+        dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
+        dashboardData.setLoanNo(data.getLoanNumber());
+        dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
+        dashboardData.setLastDownload(documentDetails.get().getLastDownload());
+        return dashboardData;
+    }
+
+    private void setDownloadAndSmsCount(List<Object[]> countData, Map<String, Long> countMap) {
+        for (Object[] row : countData) {
+            countMap.put((String) row[1], (Long) row[0]);
+        }
+
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
@@ -399,7 +422,6 @@ public class ServiceImpl implements Service {
             System.out.println("File not found or invalid loanNo");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName = loanNo + ".pdf";
 

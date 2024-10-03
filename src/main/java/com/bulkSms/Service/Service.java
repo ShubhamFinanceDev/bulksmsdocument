@@ -23,7 +23,7 @@ public interface Service {
 
     ResponseEntity<?> listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception;
 
-    ResponseEntity<?> getDashboardData() throws Exception;
+    ResponseEntity<?> getDashboardData(int pageNo) throws Exception;
 
     ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo,String category) throws Exception;
 
