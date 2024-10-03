@@ -293,11 +293,13 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
         DashboardResponse dashboardResponse = new DashboardResponse();
         List<DashboardDataList> lists = new ArrayList<>();
+        Map<String, Long> smsCountByCategory = new HashMap<>();
+        Map<String, Long> downloadCountByCategory = new HashMap<>();
         int pageSize = 2;
 
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
-        Long downloadCount = documentDetailsRepo.getDownloadCount();
-        Long smsCount = dataUploadRepo.getSmsCount();
+        List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
+        List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
         List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
         double totalCount = dataUploadRepo.findCount();
 
@@ -306,32 +308,46 @@ public class ServiceImpl implements Service {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
         }
 
-        for (DataUpload data : dataUpload) {
-            DashboardDataList dashboardData = new DashboardDataList();
-            dashboardData.setCategory(data.getCertificateCategory());
-            dashboardData.setPhoneNo(data.getMobileNumber());
-            dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
-            dashboardData.setLoanNo(data.getLoanNumber());
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
-            if (documentDetails.isPresent() && (documentDetails.get().getDownloadCount() > 0)) {
-                dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
-                dashboardData.setLastDownload(documentDetails.get().getLastDownload());
-                lists.add(dashboardData);
+        setDownloadAndSmsCount(smsCountByCategoryData, smsCountByCategory);
+        setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
 
+        for (DataUpload data : dataUpload) {
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo
+                    .findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
+
+            if (documentDetails.isPresent() && documentDetails.get().getDownloadCount() > 0) {
+                DashboardDataList dashboardData = getDashboardDataList(data, documentDetails);
+                lists.add(dashboardData);
             } else {
                 System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
             }
-
         }
 
         dashboardResponse.setDataLists(lists);
-        dashboardResponse.setSmsCount(smsCount);
         dashboardResponse.setTotalCount((long) totalCount);
         dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
-        dashboardResponse.setDownloadCount(downloadCount);
+        dashboardResponse.setSmsCountByCategory(smsCountByCategory);
+        dashboardResponse.setDownloadCountByCategory(downloadCountByCategory);
         commonResponse.setMsg("Data found successfully.");
 
         return ResponseEntity.ok(dashboardResponse);
+    }
+
+    private static DashboardDataList getDashboardDataList(DataUpload data, Optional<DocumentDetails> documentDetails) {
+        DashboardDataList dashboardData = new DashboardDataList();
+        dashboardData.setCategory(data.getCertificateCategory());
+        dashboardData.setPhoneNo(data.getMobileNumber());
+        dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
+        dashboardData.setLoanNo(data.getLoanNumber());
+        dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
+        dashboardData.setLastDownload(documentDetails.get().getLastDownload());
+        return dashboardData;
+    }
+
+    private void setDownloadAndSmsCount(List<Object[]> countData, Map<String, Long> countMap) {
+        for (Object[] row : countData) {
+            countMap.put((String) row[1], (Long) row[0]);
+        }
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {

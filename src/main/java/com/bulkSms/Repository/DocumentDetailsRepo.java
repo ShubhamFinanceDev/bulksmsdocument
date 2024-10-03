@@ -23,8 +23,8 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     @Query("select e from DocumentDetails e where e.fileName =:loanNo and e.category=:category")
     DocumentDetails findByLoanNoAndCategory(String loanNo,String category);
 
-    @Query("SELECT COUNT(e) FROM DocumentDetails e WHERE e.downloadCount > 0")
-    Long getDownloadCount();
+    @Query("SELECT COUNT(d.id), d.category FROM DocumentDetails d WHERE d.downloadCount > 0 GROUP BY d.category")
+    List<Object[]> countDownloadByCategory();
 
     @Query("select dd from DocumentDetails dd where dd.fileName=:loanNumber and dd.downloadCount > 0 and dd.category=:category")
     Optional<DocumentDetails> findDataByLoanNo(String loanNumber,String category);

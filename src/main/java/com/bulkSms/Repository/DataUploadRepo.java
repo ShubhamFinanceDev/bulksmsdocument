@@ -16,8 +16,8 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
     @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
     List<DataUpload> findBySmsCategoryOfSendSms(String smsCategory, Pageable pageable);
 
-    @Query("SELECT COUNT(c) FROM DataUpload c WHERE c.smsFlag = 'Y'")
-    Long getSmsCount();
+    @Query("SELECT COUNT(d.id), d.certificateCategory FROM DataUpload d WHERE d.smsFlag = 'Y' GROUP BY d.certificateCategory")
+    List<Object[]> countSmsByCategory();
 
     @Query("select e from DataUpload e where e.loanNumber =:fileName")
     Optional<DataUpload> findByLoanNo(String fileName);
