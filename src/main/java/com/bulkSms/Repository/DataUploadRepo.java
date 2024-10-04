@@ -1,6 +1,7 @@
 package com.bulkSms.Repository;
 
 import com.bulkSms.Entity.DataUpload;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,20 +11,24 @@ import java.util.Optional;
 
 public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
-    @Query("select d from DataUpload d where d.certificateCategory = :userCategory and d.smsFlag = 'N'")
-    List<DataUpload> findByCategoryAndSmsFlagNotSent(String userCategory);
+    @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N' and d.loanNumber in (select e.fileName from DocumentDetails e where e.category=:smsCategory)")
+    Page<DataUpload> findByCategoryAndSmsFlagNotSent(String smsCategory, Pageable pageable);
 
     @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
     List<DataUpload> findBySmsCategoryOfSendSms(String smsCategory, Pageable pageable);
 
-    @Query("SELECT COUNT(c) FROM DataUpload c WHERE c.smsFlag = 'Y'")
-    Long getSmsCount();
+    @Query("SELECT COUNT(d.id), d.certificateCategory FROM DataUpload d WHERE d.smsFlag = 'Y' GROUP BY d.certificateCategory")
+    List<Object[]> countSmsByCategory();
 
     @Query("select e from DataUpload e where e.loanNumber =:fileName")
     Optional<DataUpload> findByLoanNo(String fileName);
 
-    @Query("select d from DataUpload d where d.smsFlag = 'Y'")
-    List<DataUpload> findByType();
+    @Query("select d from DataUpload d \n" +
+            "inner join DocumentDetails dd \n" +
+            "on d.loanNumber = dd.fileName \n" +
+            "and d.certificateCategory = dd.category \n" +
+            "where dd.downloadCount > 0")
+    List<DataUpload> findByType(Pageable pageable);
 
     @Query("select d from DataUpload d where d.smsFlag = 'Y'")
     List<DataUpload> findByTypeOfSendSms(Pageable pageable);
@@ -31,9 +36,14 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
     @Query("select d from DataUpload d where d.smsFlag = 'N' and d.loanNumber in (select e.fileName from DocumentDetails e)")
     List<DataUpload> findByTypeForUnsendSms(Pageable pageable);
 
-    @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'  and d.loanNumber in (select e.fileName from DocumentDetails e)")
+    @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'  and d.loanNumber in (select e.fileName from DocumentDetails e where e.category=:smsCategory)")
     List<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory, Pageable pageable);
-
+    @Query("select count(d) from DataUpload d \n" +
+            "inner join DocumentDetails dd \n" +
+            "on d.loanNumber = dd.fileName \n" +
+            "and d.certificateCategory = dd.category \n" +
+            "where dd.downloadCount > 0")
+    long listTotalDownloadCount();
     @Query("select count(d) from DataUpload d where d.smsFlag = 'Y'")
     long findCount();
 
@@ -43,7 +53,7 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
     @Query("select count(d) from DataUpload d where d.smsFlag = 'N'  and d.loanNumber in (select e.fileName from DocumentDetails e)")
     long findUnsendSmsCountByType();
 
-    @Query("select count(d) from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'  and d.loanNumber in (select e.fileName from DocumentDetails e)")
+    @Query("select count(d) from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N'  and d.loanNumber in (select e.fileName from DocumentDetails e where e.category=:smsCategory)")
     long findUnsendSmsCountByCategory(String smsCategory);
 
     @Query("SELECT d FROM DataUpload d WHERE d.loanNumber = :loanNumber and d.certificateCategory = :smsCategory")

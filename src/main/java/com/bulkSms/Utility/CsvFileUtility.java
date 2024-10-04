@@ -26,7 +26,7 @@ public class CsvFileUtility {
         return TYPE.equals(file.getContentType());
     }
 
-    public List<DataUpload> csvBulksms(InputStream inputStream) throws Exception {
+    public List<DataUpload> readCsvFile(InputStream inputStream) throws Exception {
         List<DataUpload> dataUploadList = new ArrayList<>();
 
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
@@ -47,7 +47,7 @@ public class CsvFileUtility {
                     dataUpload.setLoanNumber(record.get(0));
                     dataUpload.setMobileNumber(record.get(1));
                     dataUpload.setCertificateCategory(record.get(2));
-                    dataUpload.setSmsFlag(record.get(3));
+                    dataUpload.setSmsFlag("N");
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
