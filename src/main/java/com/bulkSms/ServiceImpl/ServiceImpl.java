@@ -12,11 +12,13 @@ import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
 import com.bulkSms.Utility.SmsUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +35,12 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+@Slf4j
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
 
@@ -79,10 +86,9 @@ public class ServiceImpl implements Service {
     }
 
     @Transactional
-    public ResponseEntity<?> fetchPdf(String folderPath, String category, int pageNo) throws IOException {
+    public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
 
         CommonResponse commonResponse = new CommonResponse();
-        DocumentDetails documentReader = new DocumentDetails();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
@@ -106,6 +112,7 @@ public class ServiceImpl implements Service {
                     pdfMerger.setDestinationFileName(mergedPDFPath.toString());
                     pdfMerger.mergeDocuments(null); // Merges the PDFs
                     System.out.println("Merged and copied PDF to: " + mergedPDFPath);
+                    DocumentDetails documentReader = new DocumentDetails();
 
                     documentReader.setJobId(jobAuditTrail.getJobId());
                     documentReader.setFileName(String.valueOf(subDir.getFileName()));
@@ -150,17 +157,42 @@ public class ServiceImpl implements Service {
         responseOfFetchPdf.setListOfPdfNames(readerList);
     }
 
-
+    @Transactional
     @Override
-    public ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception {
+    public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-
+        List<DataUpload> filteredData = new ArrayList<>();
         if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.csvBulksms(file.getInputStream());
-            dataUploadRepo.saveAll(dataUploadList);
-            commonResponse.setMsg("Csv file upload successfully");
+            List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream());
+            if (dataUploadList.size() > 0) {
+                log.info("csv file read successfully {} row size", dataUploadList.size());
+                Set<String> seenCombinations = new HashSet<>();
+                filteredData = dataUploadList.stream()
+                        // Filter the list based on unique loanNumber and certificateCategory
+                        .filter(dataUpload -> seenCombinations.add(dataUpload.getLoanNumber() + "-" + dataUpload.getCertificateCategory()))
+                        .collect(Collectors.toList());
+                log.info("duplicate entry removed  {} updated row size", filteredData.size());
+
+                int batchSize = 5000;  // Define the size of each batch
+                int totalSize = filteredData.size();
+
+                // Loop through the list and save in batches
+                for (int start = 0; start < totalSize; start += batchSize) {
+
+                    int end = Math.min(start + batchSize, totalSize);
+                    log.info("batch executed inserting data index from {} to {}", start, end);
+
+                    List<DataUpload> dataUploadListBatch = filteredData.subList(start, end);
+                    dataUploadRepo.saveAll(dataUploadListBatch); // Save each sublist (batch) in a separate transaction
+                    log.info("batch successfully executed ");
+
+                }
+                log.info("file upload job completed");
+                commonResponse.setMsg("File uploaded successfully total records created "+filteredData.size());
+
+            }
         } else {
-            commonResponse.setMsg("File is not a csv file");
+            commonResponse.setMsg("File is not a csv file or empty");
         }
         return ResponseEntity.ok(commonResponse);
     }
@@ -206,42 +238,98 @@ public class ServiceImpl implements Service {
     @Override
     public ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception {
         List<Object> content = new ArrayList<>();
-        LocalDateTime timestamp = LocalDateTime.now();
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
-            CommonResponse commonResponse = new CommonResponse();
-            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
-            if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
-                for (DataUpload smsSendDetails : smsCategoryDetails) {
+            int requestBatchSize = 5000;
+            int batchCount = 0;
 
-                    if (documentDetailsRepo.findByLoanNoAndCategory(smsSendDetails.getLoanNumber(), smsCategory) != null) {
+            while (true) {
+                Pageable pageable = PageRequest.of(batchCount, requestBatchSize);
+                Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory, pageable);
+                if (smsCategoryDetails.hasContent()) {
+                    List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
+                    log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
+                    executeSmsServiceThread(dataUploadList, content); //start send sms thread
+                    batchCount++;
 
-                        smsUtility.sendTextMsgToUser(smsSendDetails);
-                        bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(smsSendDetails.getId());
-
-                        Map<Object, Object> map = new HashMap<>();
-                        map.put("loanNumber", smsSendDetails.getLoanNumber());
-                        map.put("mobileNumber", smsSendDetails.getMobileNumber());
-                        map.put("timestamp", timestamp);
-                        map.put("smsFlag", "success");
-                        content.add(map);
-                    }
+                } else {
+                    break;
                 }
-
             }
-            if (content.isEmpty()) {
-                commonResponse.setMsg("Data not found");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-            } else {
-                commonResponse.setMsg("Success");
-                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(content.size(), commonResponse.getMsg(), content));
 
-            }
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
+        if (content.isEmpty()) {
+            commonResponse.setMsg("Data not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+        } else {
+            commonResponse.setMsg("Success");
+            return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(content.size(), commonResponse.getMsg(), content));
+
+        }
+    }
+
+
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content) throws Exception {
+        LocalDateTime timestamp = LocalDateTime.now();
+        log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        log.info("Current available processors {}", availableProcessors);
+
+        int listSize = dataUploadList.size();
+        int batchSize = 500; // Adjust as needed based on memory or processing needs
+        int numBatches = (int) Math.ceil((double) listSize / batchSize);  // Total number of batches
+        int numThreads = Math.min(numBatches, availableProcessors * 2);
+
+        log.info("No of threads set in poll size {}", numThreads);
+        // Create a fixed thread pool
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        int start = 0;
+
+        for (int i = 0; i < numThreads; i++) {
+
+            int end = Math.min(start + batchSize, dataUploadList.size());
+            // Sublist for each thread to process
+            List<DataUpload> sublist = dataUploadList.subList(start, end);
+            log.info("Thread {} execution initiated and processing list index from {} to {}", numThreads, start, end);
+            // Submit a task to process this sublist
+            executorService.submit(() -> {
+                for (DataUpload element : sublist) {
+                    try {
+
+                        smsUtility.sendTextMsgToUser(element);
+                        bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
+                        Map<Object, Object> map = new HashMap<>();
+                        map.put("loanNumber", element.getLoanNumber());
+                        map.put("mobileNumber", element.getMobileNumber());
+                        map.put("timestamp", timestamp);
+                        map.put("smsFlag", "success");
+                        content.add(map);
+//                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+
+                }
+                log.info("Thread {} completed successfully sms sent successfully {}  ", numThreads, sublist.size());
+
+            });
+
+
+            start = end;
+
+        }
+        // Shut down the executor and wait for tasks to complete
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.HOURS);
+        System.out.println("All tasks completed.");
+
+
     }
 
     @Override
@@ -295,13 +383,13 @@ public class ServiceImpl implements Service {
         List<DashboardDataList> lists = new ArrayList<>();
         Map<String, Long> smsCountByCategory = new HashMap<>();
         Map<String, Long> downloadCountByCategory = new HashMap<>();
-        int pageSize = 2;
+        int pageSize = 100;
 
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
         List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
         List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
         List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
-        double totalCount = dataUploadRepo.findCount();
+        double totalCount = dataUploadRepo.listTotalDownloadCount();
 
         if (dataUpload.isEmpty()) {
             commonResponse.setMsg("Data not found.");
@@ -312,8 +400,7 @@ public class ServiceImpl implements Service {
         setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
 
         for (DataUpload data : dataUpload) {
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo
-                    .findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
+            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
 
             if (documentDetails.isPresent() && documentDetails.get().getDownloadCount() > 0) {
                 DashboardDataList dashboardData = getDashboardDataList(data, documentDetails);
@@ -348,6 +435,7 @@ public class ServiceImpl implements Service {
         for (Object[] row : countData) {
             countMap.put((String) row[1], (Long) row[0]);
         }
+
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
@@ -397,7 +485,6 @@ public class ServiceImpl implements Service {
         documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()));
 
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
-
     }
 
     @Override

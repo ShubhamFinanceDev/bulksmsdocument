@@ -8,7 +8,5 @@ import java.util.List;
 public class ResponseOfFetchPdf {
     private CommonResponse commonResponse;
     private Long downloadCount;
-    private Long totalCount;
-    private boolean nextPage;
     private List<ListResponse> listOfPdfNames;
 }

@@ -58,6 +58,7 @@ public class SmsUtility {
 
             if (otpResponse != null && "OK".equals(otpResponse.get("status"))) {
                 log.info("SMS Sent Successfully to {}", mobileNumber);
+                System.out.println(smsBody);
             } else {
                 log.error("Failed to send SMS to {}: {}", mobileNumber, otpResponse);
             }

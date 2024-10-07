@@ -26,7 +26,7 @@ public class CsvFileUtility {
         return TYPE.equals(file.getContentType());
     }
 
-    public List<DataUpload> csvBulksms(InputStream inputStream) throws Exception {
+    public List<DataUpload> readCsvFile(InputStream inputStream) throws Exception {
         List<DataUpload> dataUploadList = new ArrayList<>();
 
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
