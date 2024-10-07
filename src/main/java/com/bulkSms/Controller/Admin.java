@@ -64,7 +64,7 @@ public class Admin {
     }
 
     @GetMapping("/sms-process")
-    public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "1") int pageNo) throws Exception
+    public ResponseEntity<?> sendSms(@RequestParam String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "1") int pageNo) throws Exception
     {
         try {
 
