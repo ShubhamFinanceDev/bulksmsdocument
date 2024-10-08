@@ -58,4 +58,7 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
     @Query("SELECT d FROM DataUpload d WHERE d.loanNumber = :loanNumber and d.certificateCategory = :smsCategory")
     Optional<DataUpload> findByloanNumber(String loanNumber, String smsCategory);
+
+    @Query("select d.certificateCategory from DataUpload d where d.loanNumber = :loanNumber")
+    Object findCategory(String loanNumber);
 }
