@@ -21,5 +21,5 @@ public class BulkSms {
     @JsonIgnore
     @JoinColumn(name = "id")
     @OneToOne
-    private DataUpload dataUpload;
+        private DataUpload dataUpload;
 }
