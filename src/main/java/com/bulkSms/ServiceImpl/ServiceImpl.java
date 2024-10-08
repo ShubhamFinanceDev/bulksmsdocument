@@ -250,7 +250,8 @@ public class ServiceImpl implements Service {
                 if (smsCategoryDetails.hasContent()) {
                     List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
                     log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
-                    executeSmsServiceThread(dataUploadList, content); //start send sms thread
+                    String category =smsCategory;
+                    executeSmsServiceThread(dataUploadList, content,category); //start send sms thread
                     batchCount++;
 
                 } else {
@@ -274,7 +275,7 @@ public class ServiceImpl implements Service {
     }
 
 
-    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content) throws Exception {
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content,String category) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
         log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -308,6 +309,7 @@ public class ServiceImpl implements Service {
                         map.put("mobileNumber", element.getMobileNumber());
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "success");
+                        map.put("category",category);
                         content.add(map);
 //                        }
                     } catch (Exception e) {
@@ -360,6 +362,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "success");
+                    map.put("category",smsCategory);
                     userDetails.add(map);
 
                 }
@@ -515,6 +518,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "un-send");
+                    map.put("category", smsCategory);
                     detailsOfUser.add(map);
                 }
                 return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", detailsOfUser));
