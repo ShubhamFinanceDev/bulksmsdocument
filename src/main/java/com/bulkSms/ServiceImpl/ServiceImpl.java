@@ -161,7 +161,13 @@ public class ServiceImpl implements Service {
     @Override
     public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
+        JobAuditTrail jobAuditTrail=new JobAuditTrail();
         List<DataUpload> filteredData = new ArrayList<>();
+        jobAuditTrail.setJobName("Upload-file");
+        jobAuditTrail.setStatus("in_progress");
+        jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
+        jobAuditTrailRepo.save(jobAuditTrail);
+
         if (csvFileUtility.hasCsvFormat(file)) {
             List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream());
             if (dataUploadList.size() > 0) {
@@ -189,10 +195,13 @@ public class ServiceImpl implements Service {
                 }
                 log.info("file upload job completed");
                 commonResponse.setMsg("File uploaded successfully total records created "+filteredData.size());
+                jobAuditTrailRepo.updateEndStatus("File uploaded successfully total records created","complete",Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
 
             }
         } else {
             commonResponse.setMsg("File is not a csv file or empty");
+            jobAuditTrailRepo.updateEndStatus("File is not a csv file or empty","failed",Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+
         }
         return ResponseEntity.ok(commonResponse);
     }
