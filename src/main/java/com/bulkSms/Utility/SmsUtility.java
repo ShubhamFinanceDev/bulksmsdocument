@@ -51,7 +51,7 @@ public class SmsUtility {
         if (smsBody!= null) {
 
             String  url = smsUrl + "?method=" + smsMethod + "&api_key=" + smsKey + "&to=" + mobileNumber +
-                    "&sender=" + smsSender + "&message=" + smsBody + "&format=" + smsFormat + "&unicode=auto"+"shortUrl=1";
+                    "&sender=" + smsSender + "&message=" + smsBody + "&format=" + smsFormat + "&unicode=auto"+"&shortUrl=1";
 
             RestTemplate restTemplate = new RestTemplate();
             HashMap<String, String> otpResponse = restTemplate.getForObject(url, HashMap.class);
