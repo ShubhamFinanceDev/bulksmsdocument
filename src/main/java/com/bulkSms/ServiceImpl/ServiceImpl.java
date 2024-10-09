@@ -2,7 +2,6 @@ package com.bulkSms.ServiceImpl;
 
 
 import com.bulkSms.Entity.*;
-import com.bulkSms.Entity.BulkSms;
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
@@ -16,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -250,7 +248,8 @@ public class ServiceImpl implements Service {
                 if (smsCategoryDetails.hasContent()) {
                     List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
                     log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
-                    executeSmsServiceThread(dataUploadList, content); //start send sms thread
+                    String category =smsCategory;
+                    executeSmsServiceThread(dataUploadList, content,category); //start send sms thread
                     batchCount++;
 
                 } else {
@@ -274,7 +273,7 @@ public class ServiceImpl implements Service {
     }
 
 
-    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content) throws Exception {
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content,String category) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
         log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -308,6 +307,7 @@ public class ServiceImpl implements Service {
                         map.put("mobileNumber", element.getMobileNumber());
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "success");
+                        map.put("category",category);
                         content.add(map);
 //                        }
                     } catch (Exception e) {
@@ -360,6 +360,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "success");
+                    map.put("category",userDetail.getCertificateCategory());
                     userDetails.add(map);
 
                 }
@@ -388,54 +389,23 @@ public class ServiceImpl implements Service {
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
         List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
         List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
-        List<DataUpload> dataUpload = dataUploadRepo.findByType(pageable);
+        List<DashboardDataList> dataUpload = dataUploadRepo.findByType(pageable);
         double totalCount = dataUploadRepo.listTotalDownloadCount();
-
-        if (dataUpload.isEmpty()) {
-            commonResponse.setMsg("Data not found.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-
         setDownloadAndSmsCount(smsCountByCategoryData, smsCountByCategory);
         setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
-
-        for (DataUpload data : dataUpload) {
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber(), data.getCertificateCategory());
-
-            if (documentDetails.isPresent() && documentDetails.get().getDownloadCount() > 0) {
-                DashboardDataList dashboardData = getDashboardDataList(data, documentDetails);
-                lists.add(dashboardData);
-            } else {
-                System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
-            }
-        }
-
-        dashboardResponse.setDataLists(lists);
+        dashboardResponse.setDataLists(dataUpload);
         dashboardResponse.setTotalCount((long) totalCount);
         dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
         dashboardResponse.setSmsCountByCategory(smsCountByCategory);
         dashboardResponse.setDownloadCountByCategory(downloadCountByCategory);
         commonResponse.setMsg("Data found successfully.");
-
         return ResponseEntity.ok(dashboardResponse);
-    }
-
-    private static DashboardDataList getDashboardDataList(DataUpload data, Optional<DocumentDetails> documentDetails) {
-        DashboardDataList dashboardData = new DashboardDataList();
-        dashboardData.setCategory(data.getCertificateCategory());
-        dashboardData.setPhoneNo(data.getMobileNumber());
-        dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
-        dashboardData.setLoanNo(data.getLoanNumber());
-        dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
-        dashboardData.setLastDownload(documentDetails.get().getLastDownload());
-        return dashboardData;
     }
 
     private void setDownloadAndSmsCount(List<Object[]> countData, Map<String, Long> countMap) {
         for (Object[] row : countData) {
             countMap.put((String) row[1], (Long) row[0]);
         }
-
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
@@ -515,6 +485,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "un-send");
+                    map.put("category", userDetail.getCertificateCategory());
                     detailsOfUser.add(map);
                 }
                 return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", detailsOfUser));

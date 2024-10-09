@@ -1,6 +1,7 @@
 package com.bulkSms.Repository;
 
 import com.bulkSms.Entity.DataUpload;
+import com.bulkSms.Model.DashboardDataList;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,12 +24,15 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
     @Query("select e from DataUpload e where e.loanNumber =:fileName")
     Optional<DataUpload> findByLoanNo(String fileName);
 
-    @Query("select d from DataUpload d \n" +
-            "inner join DocumentDetails dd \n" +
-            "on d.loanNumber = dd.fileName \n" +
-            "and d.certificateCategory = dd.category \n" +
-            "where dd.downloadCount > 0")
-    List<DataUpload> findByType(Pageable pageable);
+    @Query("SELECT new com.bulkSms.Model.DashboardDataList(" +
+            "d.loanNumber, d.mobileNumber, d.certificateCategory, " +
+            "dd.downloadCount, dd.lastDownload, sd.smsTimeStamp) " +
+            "FROM DataUpload d " +
+            "INNER JOIN DocumentDetails dd ON d.loanNumber = dd.fileName " +
+            "AND d.certificateCategory = dd.category " +
+            "LEFT JOIN BulkSms sd ON d.id = sd.id " +
+            "WHERE dd.downloadCount > 0")
+    List<DashboardDataList> findByType(Pageable pageable);
 
     @Query("select d from DataUpload d where d.smsFlag = 'Y'")
     List<DataUpload> findByTypeOfSendSms(Pageable pageable);
