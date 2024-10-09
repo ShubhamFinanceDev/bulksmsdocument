@@ -391,22 +391,14 @@ public class ServiceImpl implements Service {
         List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
         List<DashboardDataList> dataUpload = dataUploadRepo.findByType(pageable);
         double totalCount = dataUploadRepo.listTotalDownloadCount();
-
-        if (dataUpload.isEmpty()) {
-            commonResponse.setMsg("Data not found.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-
         setDownloadAndSmsCount(smsCountByCategoryData, smsCountByCategory);
         setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
-
         dashboardResponse.setDataLists(dataUpload);
         dashboardResponse.setTotalCount((long) totalCount);
         dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
         dashboardResponse.setSmsCountByCategory(smsCountByCategory);
         dashboardResponse.setDownloadCountByCategory(downloadCountByCategory);
         commonResponse.setMsg("Data found successfully.");
-
         return ResponseEntity.ok(dashboardResponse);
     }
 
