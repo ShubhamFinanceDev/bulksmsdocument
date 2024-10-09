@@ -30,7 +30,7 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
             "FROM DataUpload d " +
             "INNER JOIN DocumentDetails dd ON d.loanNumber = dd.fileName " +
             "AND d.certificateCategory = dd.category " +
-            "LEFT JOIN BulkSms sd ON d.id = sd.id " +
+            "LEFT JOIN BulkSms sd ON d.id =  sd.dataUpload.id " +
             "WHERE dd.downloadCount > 0")
     List<DashboardDataList> findByType(Pageable pageable);
 
