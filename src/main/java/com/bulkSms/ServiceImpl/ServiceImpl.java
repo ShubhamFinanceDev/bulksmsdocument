@@ -409,7 +409,7 @@ public class ServiceImpl implements Service {
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
-        System.out.println(loanNo);
+        System.out.println(loanNo+", category "+category);
         DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
 
         if (documentReader == null) {
