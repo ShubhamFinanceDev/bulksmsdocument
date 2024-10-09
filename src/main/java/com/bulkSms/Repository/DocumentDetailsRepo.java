@@ -30,8 +30,8 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     Optional<DocumentDetails> findDataByLoanNo(String loanNumber,String category);
 
     @Modifying
-    @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName")
-    void updateDownloadCountBySmsLink(String fileName, Timestamp currentDownloadTime);
+    @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName and d.category=:category")
+    void updateDownloadCountBySmsLink(String fileName, Timestamp currentDownloadTime,String category);
     @Query("SELECT e FROM DocumentDetails e WHERE e.jobId=:jobId")
     List<DocumentDetails> finByJobId(Long jobId);
 }

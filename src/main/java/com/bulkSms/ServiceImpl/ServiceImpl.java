@@ -420,24 +420,24 @@ public class ServiceImpl implements Service {
         String fileName = loanNo + ".pdf";
 
         if (category.contains("ADHOC")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathAdhoc);
+            return generatePdfDocument(loanNo, fileName, projectSavePathAdhoc,category);
 
         } else if (category.contains("SOA")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathSoa);
+            return generatePdfDocument(loanNo, fileName, projectSavePathSoa,category);
 
         } else if (category.contains("INTEREST_CERTIFICATE")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathInterestCertificate);
+            return generatePdfDocument(loanNo, fileName, projectSavePathInterestCertificate,category);
 
 
         } else if (category.contains("Reminder_Payment")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder);
+            return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder,category);
 
         }
 
         return null;
     }
 
-    private ResponseEntity<byte[]> generatePdfDocument(String loanNo, String fileName, String projectSavePathPaymentReminder) throws IOException {
+    private ResponseEntity<byte[]> generatePdfDocument(String loanNo, String fileName, String projectSavePathPaymentReminder,String category) throws IOException {
         Path filePath = Paths.get(projectSavePathPaymentReminder);
         File pdfFile = new File(filePath + fileName);
         System.out.println("filepath" + filePath);
@@ -452,7 +452,7 @@ public class ServiceImpl implements Service {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", fileName);
-        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()));
+        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()),category);
 
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
