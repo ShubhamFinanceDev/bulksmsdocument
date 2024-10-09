@@ -93,7 +93,9 @@ public class Login {
     @GetMapping("/download-kit/{category}/{loanNo}")
     public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
         try {
-            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo),category);
+            String subloan=loanNo.substring(loanNo.length()-7);
+            System.out.println("su loan no"+subloan);
+            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(subloan),category);
         }catch (Exception e){
             System.out.println("Exception found :"+e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
