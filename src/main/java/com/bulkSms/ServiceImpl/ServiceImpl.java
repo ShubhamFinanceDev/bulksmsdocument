@@ -360,7 +360,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "success");
-                    map.put("category",smsCategory);
+                    map.put("category",userDetail.getCertificateCategory());
                     userDetails.add(map);
 
                 }
@@ -485,7 +485,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "un-send");
-                    map.put("category", smsCategory);
+                    map.put("category", userDetail.getCertificateCategory());
                     detailsOfUser.add(map);
                 }
                 return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", detailsOfUser));
