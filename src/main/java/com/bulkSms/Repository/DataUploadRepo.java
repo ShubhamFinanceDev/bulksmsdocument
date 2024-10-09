@@ -24,13 +24,14 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
     @Query("select e from DataUpload e where e.loanNumber =:fileName")
     Optional<DataUpload> findByLoanNo(String fileName);
 
-    @Query("select new com.bulkSms.Model.DashboardDataList(d.loanNumber, d.mobileNumber, " +
-            "dd.category, dd.lastDownload, b.smsTimeStamp, dd.downloadCount) " +
-            "from DataUpload d " +
-            "inner join DocumentDetails dd on d.loanNumber = dd.fileName " +
-            "and d.certificateCategory = dd.category " +
-            "inner join BulkSms b on d.id = b.id " +
-            "where dd.downloadCount > 0")
+    @Query("SELECT new com.bulkSms.Model.DashboardDataList(" +
+            "d.loanNumber, d.mobileNumber, d.certificateCategory, " +
+            "dd.downloadCount, dd.lastDownload, sd.smsTimeStamp) " +
+            "FROM DataUpload d " +
+            "INNER JOIN DocumentDetails dd ON d.loanNumber = dd.fileName " +
+            "AND d.certificateCategory = dd.category " +
+            "LEFT JOIN BulkSms sd ON d.id = sd.id " +
+            "WHERE dd.downloadCount > 0")
     List<DashboardDataList> findByType(Pageable pageable);
 
     @Query("select d from DataUpload d where d.smsFlag = 'Y'")
