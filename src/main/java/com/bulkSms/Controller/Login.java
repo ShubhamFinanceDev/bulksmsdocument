@@ -43,6 +43,7 @@ public class Login {
 
 
     @PostMapping("/login")
+    @CrossOrigin("*")
     public ResponseEntity<JwtResponse> login(@RequestBody JwtRequest request) {
 
 
