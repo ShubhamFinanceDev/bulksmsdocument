@@ -155,43 +155,15 @@ public class ServiceImpl implements Service {
         responseOfFetchPdf.setListOfPdfNames(readerList);
     }
 
-    @Transactional
     @Override
     public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-        List<DataUpload> filteredData = new ArrayList<>();
-        if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream(),commonResponse);
-            if (dataUploadList.size() > 0) {
-                log.info("csv file read successfully {} row size", dataUploadList.size());
-                Set<String> seenCombinations = new HashSet<>();
-                filteredData = dataUploadList.stream()
-                        // Filter the list based on unique loanNumber and certificateCategory
-                        .filter(dataUpload -> seenCombinations.add(dataUpload.getLoanNumber() + "-" + dataUpload.getCertificateCategory()))
-                        .collect(Collectors.toList());
-                log.info("duplicate entry removed  {} updated row size", filteredData.size());
-
-                int batchSize = 5000;  // Define the size of each batch
-                int totalSize = filteredData.size();
-
-                // Loop through the list and save in batches
-                for (int start = 0; start < totalSize; start += batchSize) {
-
-                    int end = Math.min(start + batchSize, totalSize);
-                    log.info("batch executed inserting data index from {} to {}", start, end);
-
-                    List<DataUpload> dataUploadListBatch = filteredData.subList(start, end);
-                    dataUploadRepo.saveAll(dataUploadListBatch); // Save each sublist (batch) in a separate transaction
-                    log.info("batch successfully executed ");
-
-                }
-                log.info("file upload job completed");
-                commonResponse.setMsg("File uploaded successfully total records created "+filteredData.size());
-
+            if (csvFileUtility.hasCsvFormat(file)) {
+                csvFileUtility.readCsvFile(file.getInputStream());
+                commonResponse.setMsg("Files have been uploaded successfully.");
+            } else {
+                commonResponse.setMsg("File is not a csv file or empty");
             }
-        } else {
-            commonResponse.setMsg("File is not a csv file or empty");
-        }
         return ResponseEntity.ok(commonResponse);
     }
 
