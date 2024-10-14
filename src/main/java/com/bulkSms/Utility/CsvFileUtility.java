@@ -1,6 +1,7 @@
 package com.bulkSms.Utility;
 import com.bulkSms.Entity.BulkSms;
 import com.bulkSms.Entity.DataUpload;
+import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Repository.DataUploadRepo;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -26,7 +27,7 @@ public class CsvFileUtility {
         return TYPE.equals(file.getContentType());
     }
 
-    public List<DataUpload> readCsvFile(InputStream inputStream) throws Exception {
+    public List<DataUpload> readCsvFile(InputStream inputStream, CommonResponse commonResponse) throws Exception {
         List<DataUpload> dataUploadList = new ArrayList<>();
 
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
@@ -41,6 +42,7 @@ public class CsvFileUtility {
                     DataUpload dataUpload = existingDataUpload.get();
                     dataUpload.setSmsFlag("N");
                     dataUploadRepo.save(dataUpload);
+                    commonResponse.setMsg("Uploaded loan numbers enabled.");
                 } else {
                     DataUpload dataUpload = new DataUpload();
                     BulkSms bulkSms = new BulkSms();

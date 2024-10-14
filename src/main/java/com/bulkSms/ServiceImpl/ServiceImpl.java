@@ -161,7 +161,7 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
         List<DataUpload> filteredData = new ArrayList<>();
         if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream());
+            List<DataUpload> dataUploadList = csvFileUtility.readCsvFile(file.getInputStream(),commonResponse);
             if (dataUploadList.size() > 0) {
                 log.info("csv file read successfully {} row size", dataUploadList.size());
                 Set<String> seenCombinations = new HashSet<>();
