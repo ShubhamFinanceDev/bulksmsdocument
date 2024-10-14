@@ -72,10 +72,10 @@ public class SmsUtility {
         String smsBody=null;
 
         if (smsSendDetails.getCertificateCategory().contains("ADHOC")) {
-             smsBody = adhocMessage + kitBaseurl + key;
-            smsBody += "\nFPC link:- https://shubham.co/policies/fair-practice-code +\n\n" +
-                    "Regards\n" +
-                    "Shubham Housing";
+            smsBody = adhocMessage + kitBaseurl + key;
+            smsBody += "\nFPC link:- https://shubham.co/policies/fair-practice-code\n" +
+                    "Exclusion list link:- https://bit.ly/SHDFCEL";
+
 
 
         } else if (smsSendDetails.getCertificateCategory().contains("SOA")) {
