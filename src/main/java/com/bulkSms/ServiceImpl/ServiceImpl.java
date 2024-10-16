@@ -109,6 +109,7 @@ public class ServiceImpl implements Service {
                     Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
                     pdfMerger.setDestinationFileName(mergedPDFPath.toString());
                     pdfMerger.mergeDocuments(null); // Merges the PDFs
+                    System.out.println();
                     System.out.println("Merged and copied PDF to: " + mergedPDFPath);
                     DocumentDetails documentReader = new DocumentDetails();
 
