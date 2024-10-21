@@ -73,14 +73,17 @@ public class ServiceImpl implements Service {
 
     @Value("${project.save.path.payment.reminder}")
     private String projectSavePathPaymentReminder;
+    @Value("${project.save.path.soa.quarterly}")
+    private String projectSavePathSoaQuarterly;
 
     private ResourceLoader resourceLoader;
 
     private String destinationStorage(String category) {
-        return category.contains("ADHOC") ? projectSavePathAdhoc :
-                category.contains("SOA") ? projectSavePathSoa :
-                        category.contains("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
-                                category.contains("Reminder_Payment") ? projectSavePathPaymentReminder : null;
+        return category.equals("ADHOC") ? projectSavePathAdhoc :
+                category.equals("SOA") ? projectSavePathSoa :
+                        category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+                                category.equals(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+                                category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
     @Transactional
@@ -403,6 +406,9 @@ public class ServiceImpl implements Service {
 
         } else if (category.contains("Reminder_Payment")) {
             return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder,category);
+
+        } else if (category.contains("SOA_QUARTERLY")) {
+            return generatePdfDocument(loanNo,fileName, projectSavePathSoaQuarterly,category);
 
         }
 
