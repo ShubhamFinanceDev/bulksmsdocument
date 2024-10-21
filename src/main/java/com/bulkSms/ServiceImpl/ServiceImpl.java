@@ -82,7 +82,7 @@ public class ServiceImpl implements Service {
         return category.equals("ADHOC") ? projectSavePathAdhoc :
                 category.equals("SOA") ? projectSavePathSoa :
                         category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
-                                category.equals(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+                                category.equals("SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
                                 category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
