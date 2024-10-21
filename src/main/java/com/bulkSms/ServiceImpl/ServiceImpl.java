@@ -385,12 +385,12 @@ public class ServiceImpl implements Service {
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
         System.out.println(loanNo+", category "+category);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
-
-        if (documentReader == null) {
-            System.out.println("File not found or invalid loanNo");
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+//        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
+//
+//        if (documentReader == null) {
+//            System.out.println("File not found or invalid loanNo");
+//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//        }
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
         String fileName = loanNo + ".pdf";
 
