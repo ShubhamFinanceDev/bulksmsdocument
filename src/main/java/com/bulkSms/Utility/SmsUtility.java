@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Year;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 
 @Slf4j
@@ -35,23 +37,31 @@ public class SmsUtility {
     private String kitBaseurl;
 
     int year = Year.now().getValue();
+//    DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMMM-yyyy");
+//    YearMonth thisMonth    = YearMonth.now();
+//    String currentMonth    = thisMonth.format(monthYearFormatter);
+//    YearMonth quaterMonth = thisMonth.plusMonths(2);
+//    String quaterMonthString = quaterMonth.format(monthYearFormatter);
+
 
     private String adhocMessage = "Dear%20Customer%2C%20Congratulations%20to%20be%20part%20of%20the%20Shubham%20family%2C%20we%20are%20pleased%20to%20share%20your%20welcome%20kit%20having%20welcome%20letter%2C%20repayment%20schedule%20%26%20sanction%20letter%20cum%20MITC.%20Kindly%20download%20your%20welcome%20kit%2C%20fair%20practice%20code%2C%20%26%20exclusion%20list%20from%20below%20links.%20For%20any%20enquiry%20related%20to%20this%2C%20you%20can%20call%20at%20our%20customer%20care%20toll%20free%20no.%20-%201800%20258%202225%20or%20email%20at%20customercare%40shubham.co%0AWelcome%20kit%20Link%3A- ";
     private String soaTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Statement+of+Account+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String interestCertificateTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Interest+Certificate+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String reminderPayment = "";
+    private String soaQuarterly = "Dear%20Customer%2C%20Please%20download%20your%20Quarterly%20Statement%20of%20Account%20from%20below%20link%20for%20the%20period%20of%201%20to%202.%0ARegards%0AShubham%20Housing%20Development%20Finance%20Company%20Ltd%0ALink%3A%20google.com%0A";
+
 
     @Async
     public void sendTextMsgToUser(DataUpload smsSendDetails) throws Exception {
         String mobileNumber = smsSendDetails.getMobileNumber();
-        String key = "/" + smsSendDetails.getCertificateCategory() + "/" +smsSendDetails.getLoanNumber();
+        String key = "/" + smsSendDetails.getCertificateCategory() + "/" + smsSendDetails.getLoanNumber();
         String smsBody = makeSmsCustomBody(smsSendDetails, key);
 
 
-        if (smsBody!= null) {
+        if (smsBody != null) {
 
-            String  url = smsUrl + "?method=" + smsMethod + "&api_key=" + smsKey + "&to=" + mobileNumber +
-                    "&sender=" + smsSender + "&message=" + smsBody + "&format=" + smsFormat + "&unicode=auto"+"&shortUrl=1";
+            String url = smsUrl + "?method=" + smsMethod + "&api_key=" + smsKey + "&to=" + mobileNumber +
+                    "&sender=" + smsSender + "&message=" + smsBody + "&format=" + smsFormat + "&unicode=auto" + "&shortUrl=1";
 
             RestTemplate restTemplate = new RestTemplate();
             HashMap<String, String> otpResponse = restTemplate.getForObject(url, HashMap.class);
@@ -69,7 +79,7 @@ public class SmsUtility {
 
 
     private String makeSmsCustomBody(DataUpload smsSendDetails, String key) {
-        String smsBody=null;
+        String smsBody = null;
 
         if (smsSendDetails.getCertificateCategory().contains("ADHOC")) {
             smsBody = adhocMessage + kitBaseurl + key;
@@ -77,17 +87,20 @@ public class SmsUtility {
                     "Exclusion list link:- https://bit.ly/SHDFCEL";
 
 
-
         } else if (smsSendDetails.getCertificateCategory().contains("SOA")) {
-             smsBody = soaTemplate + kitBaseurl + key;
+            smsBody = soaTemplate + kitBaseurl + key;
 
         } else if (smsSendDetails.getCertificateCategory().contains("INTEREST_CERTIFICATE")) {
 
-             smsBody = interestCertificateTemplate + kitBaseurl + key;
+            smsBody = interestCertificateTemplate + kitBaseurl + key;
+        } else if (smsSendDetails.getCertificateCategory().contains("SOA_QUARTERLY")) {
+            smsBody=  soaQuarterly + kitBaseurl + key;
+            smsBody  += "\n\nRegards"+
+                    "\nRavi";
+            
         }
         return smsBody;
     }
-
-
 }
+
 

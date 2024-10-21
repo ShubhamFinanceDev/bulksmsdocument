@@ -73,6 +73,8 @@ public class ServiceImpl implements Service {
 
     @Value("${project.save.path.payment.reminder}")
     private String projectSavePathPaymentReminder;
+    @Value("${project.save.path.soa.quarterly}")
+    private String projectSavePathSoaQuarterly;
 
     private ResourceLoader resourceLoader;
 
@@ -80,6 +82,7 @@ public class ServiceImpl implements Service {
         return category.contains("ADHOC") ? projectSavePathAdhoc :
                 category.contains("SOA") ? projectSavePathSoa :
                         category.contains("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+                                category.contains(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
                                 category.contains("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
@@ -404,6 +407,9 @@ public class ServiceImpl implements Service {
         } else if (category.contains("Reminder_Payment")) {
             return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder,category);
 
+        } else if (category.contains("SOA_QUARTERLY")) {
+            return generatePdfDocument(loanNo,fileName, projectSavePathSoaQuarterly,category);
+            
         }
 
         return null;
