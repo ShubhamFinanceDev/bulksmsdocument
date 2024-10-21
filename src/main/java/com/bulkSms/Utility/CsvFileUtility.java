@@ -37,6 +37,7 @@ public class CsvFileUtility {
             for (CSVRecord record : csvParser) {
                 String loanNumber = record.get(0);
                 String certificateCategory = record.get(2);
+                String mobileNo=record.get(1);
 
                 // Combine loanNumber and certificateCategory to create a unique key
                 String uniqueKey = loanNumber + "|" + certificateCategory;
@@ -55,6 +56,7 @@ public class CsvFileUtility {
 
                 if (existingDataUpload.isPresent()) {
                     DataUpload dataUpload = existingDataUpload.get();
+                    dataUpload.setMobileNumber(mobileNo);
                     dataUpload.setSmsFlag("N");
                     dataUploadRepo.save(dataUpload);
                 } else {
