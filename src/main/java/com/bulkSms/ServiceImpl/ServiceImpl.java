@@ -79,11 +79,11 @@ public class ServiceImpl implements Service {
     private ResourceLoader resourceLoader;
 
     private String destinationStorage(String category) {
-        return category.contains("ADHOC") ? projectSavePathAdhoc :
-                category.contains("SOA") ? projectSavePathSoa :
-                        category.contains("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
-                                category.contains(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
-                                category.contains("Reminder_Payment") ? projectSavePathPaymentReminder : null;
+        return category.equals("ADHOC") ? projectSavePathAdhoc :
+                category.equals("SOA") ? projectSavePathSoa :
+                        category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+                                category.equals(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+                                category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
     @Transactional

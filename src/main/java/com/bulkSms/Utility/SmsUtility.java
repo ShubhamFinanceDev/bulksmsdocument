@@ -48,7 +48,10 @@ public class SmsUtility {
     private String soaTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Statement+of+Account+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String interestCertificateTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Interest+Certificate+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String reminderPayment = "";
-    private String soaQuarterly = "Dear%20Customer%2C%20Please%20download%20your%20Quarterly%20Statement%20of%20Account%20from%20below%20link%20for%20the%20period%20of%201%20to%202.%0ARegards%0AShubham%20Housing%20Development%20Finance%20Company%20Ltd%0ALink%3A%20google.com%0A";
+    private String soaQuarterly = "Dear Customer, Please download your Quarterly Statement of Account from below link for the period of Apr’24 to Jun’24.\n" +
+            "Regards\n" +
+            "Shubham Housing Development Finance Company Ltd\n" +
+            "Link: ";
 
 
     @Async
@@ -81,22 +84,19 @@ public class SmsUtility {
     private String makeSmsCustomBody(DataUpload smsSendDetails, String key) {
         String smsBody = null;
 
-        if (smsSendDetails.getCertificateCategory().contains("ADHOC")) {
+        if (smsSendDetails.getCertificateCategory().equals("ADHOC")) {
             smsBody = adhocMessage + kitBaseurl + key;
             smsBody += "\nFPC link:- https://shubham.co/policies/fair-practice-code\n" +
                     "Exclusion list link:- https://bit.ly/SHDFCEL";
 
-
-        } else if (smsSendDetails.getCertificateCategory().contains("SOA")) {
+        } else if (smsSendDetails.getCertificateCategory().equals("SOA")) {
             smsBody = soaTemplate + kitBaseurl + key;
 
-        } else if (smsSendDetails.getCertificateCategory().contains("INTEREST_CERTIFICATE")) {
+        } else if (smsSendDetails.getCertificateCategory().equals("INTEREST_CERTIFICATE")) {
 
             smsBody = interestCertificateTemplate + kitBaseurl + key;
-        } else if (smsSendDetails.getCertificateCategory().contains("SOA_QUARTERLY")) {
+        } else if (smsSendDetails.getCertificateCategory().equals("SOA_QUARTERLY")) {
             smsBody=  soaQuarterly + kitBaseurl + key;
-            smsBody  += "\n\nRegards"+
-                    "\nRavi";
             
         }
         return smsBody;
