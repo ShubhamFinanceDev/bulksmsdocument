@@ -11,7 +11,8 @@ public class EncodingUtils {
     }
 
     public String decode(String input) {
-        String subString=input.substring(input.length()-4);
+        String subString=input.substring(0,input.length()-5);
+        System.out.println("substring"+subString);
         return new String(Base64.getDecoder().decode(subString));
     }
 }
