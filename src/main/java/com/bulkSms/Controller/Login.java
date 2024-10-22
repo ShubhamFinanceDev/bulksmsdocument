@@ -94,7 +94,7 @@ public class Login {
     public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
         try {
             logger.info("request for pdf download encrypted {}",loanNo);
-            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo),category);
+            return service.fetchPdfFileForDownloadBySmsLink(loanNo,category);
         }catch (Exception e){
             System.out.println("Exception found :"+e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
