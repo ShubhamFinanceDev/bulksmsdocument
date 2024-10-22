@@ -49,7 +49,7 @@ public class SmsUtility {
     @Async
     public void sendTextMsgToUser(DataUpload smsSendDetails) throws Exception {
         String mobileNumber = smsSendDetails.getMobileNumber();
-        String key = "/" + smsSendDetails.getCertificateCategory() + "/" +smsSendDetails.getLoanNumber();
+        String key = "/" + smsSendDetails.getCertificateCategory() + "/" +encodingUtils.encode(smsSendDetails.getLoanNumber());
         String smsBody = makeSmsCustomBody(smsSendDetails, key);
 
 
