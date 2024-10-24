@@ -83,65 +83,92 @@ public class ServiceImpl implements Service {
                 category.equals("SOA") ? projectSavePathSoa :
                         category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
                                 category.equals("SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
-                                category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
+                                        category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
     @Transactional
     public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
-
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
-        List<DocumentDetails> documentReaderList = new ArrayList<>();
-        String copyPath = destinationStorage(category);
-        long count = 0L;
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
+        jobAuditTrailRepo.save(jobAuditTrail);
 
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
-            for (Path subDir : directoryStream) {
-                File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        List<DocumentDetails> documentReaderList = new ArrayList<>();
+        String copyPath = destinationStorage(category);
+        long count = 0;
 
-                if (pdfFiles.length > 0) {
-                    PDFMergerUtility pdfMerger = new PDFMergerUtility();
-                    for (File pdfFile : pdfFiles) {
-                        pdfMerger.addSource(pdfFile);
+        try {
+            if (category.equals("ADHOC")) {
+                try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
+                    for (Path subDir : directoryStream) {
+                        File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+                        if (pdfFiles.length > 0) {
+                            PDFMergerUtility pdfMerger = new PDFMergerUtility();
+                            for (File pdfFile : pdfFiles) pdfMerger.addSource(pdfFile);
+
+                            Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
+                            pdfMerger.setDestinationFileName(mergedPDFPath.toString());
+                            pdfMerger.mergeDocuments(null);
+
+                            documentReaderList.add(createDocumentDetails(jobAuditTrail, subDir.getFileName().toString(), category));
+                            count++;
+                            documentDetailsRepo.save(documentReaderList.get(documentReaderList.size() - 1));
+                        }
                     }
-                    Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
-                    pdfMerger.setDestinationFileName(mergedPDFPath.toString());
-                    pdfMerger.mergeDocuments(null); // Merges the PDFs
-                    System.out.println("Merged and copied PDF to: " + mergedPDFPath);
-                    DocumentDetails documentReader = new DocumentDetails();
+                }
+            } else {
+                File[] pdfFiles = Path.of(folderPath).toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+                for (File pdfFile : pdfFiles) {
+                    Long fileSequence = documentDetailsRepo.incrementSequence("soa_sequence");
+                    String filename = extractFilename(pdfFile.getName(), fileSequence);
+                    Path.of(copyPath, filename + ".pdf");
 
-                    documentReader.setJobId(jobAuditTrail.getJobId());
-                    documentReader.setFileName(String.valueOf(subDir.getFileName()));
-                    documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                    documentReader.setCategory(category);
-                    documentReader.setDownloadCount(0L);
-                    documentReaderList.add(documentReader);
+                    documentReaderList.add(createDocumentDetails(jobAuditTrail, filename, category));
                     count++;
-                    documentDetailsRepo.save(documentReader);
-
-                    jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                    commonResponse.setMsg("All PDF files copied successfully.");
-
+                    documentDetailsRepo.save(documentReaderList.get(documentReaderList.size() - 1));
                 }
             }
-            setJobResponse(response, jobAuditTrail.getJobId());
-            response.setCommonResponse(commonResponse);
-            response.setDownloadCount(count);
+            jobAuditTrailRepo.updateEndStatus("Number of files saved: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+            setJobResponse(response, jobAuditTrail.getJobId(), commonResponse, count);
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
-            commonResponse.setMsg("An error occurred while copying the file " + e.getMessage());
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
-
+            handleException(e, commonResponse, jobAuditTrail);
         }
 
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
     }
+
+    private DocumentDetails createDocumentDetails(JobAuditTrail jobAuditTrail, String fileName, String category) {
+        DocumentDetails documentReader = new DocumentDetails();
+        documentReader.setJobId(jobAuditTrail.getJobId());
+        documentReader.setFileName(fileName);
+        documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+        documentReader.setCategory(category);
+        documentReader.setDownloadCount(0L);
+        return documentReader;
+    }
+
+    private String extractFilename(String fileName, Long fileSequence) {
+        int firstUnderscore = fileName.indexOf('_');
+        int secondUnderscore = fileName.indexOf('_', firstUnderscore + 1);
+        return fileName.substring(firstUnderscore, secondUnderscore) + "@" + fileSequence;
+    }
+
+    private void handleException(Exception e, CommonResponse commonResponse, JobAuditTrail jobAuditTrail) {
+        commonResponse.setMsg("Error copying file: " + e.getMessage());
+        jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+    }
+
+    private void setJobResponse(ResponseOfFetchPdf response, Long jobId, CommonResponse commonResponse, long count) {
+        commonResponse.setMsg("All PDF files copied successfully.");
+        response.setCommonResponse(commonResponse);
+        response.setDownloadCount(count);
+    }
+
 
 
     private void setJobResponse(ResponseOfFetchPdf responseOfFetchPdf, Long jobId) {
@@ -161,12 +188,12 @@ public class ServiceImpl implements Service {
     @Override
     public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-            if (csvFileUtility.hasCsvFormat(file)) {
-                csvFileUtility.readCsvFile(file.getInputStream());
-                commonResponse.setMsg("Files have been uploaded successfully.");
-            } else {
-                commonResponse.setMsg("File is not a csv file or empty");
-            }
+        if (csvFileUtility.hasCsvFormat(file)) {
+            csvFileUtility.readCsvFile(file.getInputStream());
+            commonResponse.setMsg("Files have been uploaded successfully.");
+        } else {
+            commonResponse.setMsg("File is not a csv file or empty");
+        }
         return ResponseEntity.ok(commonResponse);
     }
 
@@ -223,8 +250,8 @@ public class ServiceImpl implements Service {
                 if (smsCategoryDetails.hasContent()) {
                     List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
                     log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
-                    String category =smsCategory;
-                    executeSmsServiceThread(dataUploadList, content,category); //start send sms thread
+                    String category = smsCategory;
+                    executeSmsServiceThread(dataUploadList, content, category); //start send sms thread
                     batchCount++;
 
                 } else {
@@ -248,7 +275,7 @@ public class ServiceImpl implements Service {
     }
 
 
-    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content,String category) throws Exception {
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content, String category) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
         log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -282,7 +309,7 @@ public class ServiceImpl implements Service {
                         map.put("mobileNumber", element.getMobileNumber());
                         map.put("timestamp", timestamp);
                         map.put("smsFlag", "success");
-                        map.put("category",category);
+                        map.put("category", category);
                         content.add(map);
 //                        }
                     } catch (Exception e) {
@@ -335,7 +362,7 @@ public class ServiceImpl implements Service {
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "success");
-                    map.put("category",userDetail.getCertificateCategory());
+                    map.put("category", userDetail.getCertificateCategory());
                     userDetails.add(map);
 
                 }
@@ -383,40 +410,34 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
+    public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String filename, String category) throws Exception {
 
-        System.out.println("decode loan no"+ loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
-
-        if (documentReader == null) {
-            System.out.println("File not found or invalid loanNo");
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        System.out.println("decode loan no" + filename);
         System.out.println("Current working directory: " + System.getProperty("user.dir"));
-        String fileName = loanNo + ".pdf";
-
         if (category.contains("ADHOC")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathAdhoc,category);
-
+            return generatePdfDocument(filename, projectSavePathAdhoc, category);
         } else if (category.contains("SOA")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathSoa,category);
+            return generatePdfDocument(filename, projectSavePathSoa, category);
 
         } else if (category.contains("INTEREST_CERTIFICATE")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathInterestCertificate,category);
-
-
-        } else if (category.contains("Reminder_Payment")) {
-            return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder,category);
-
-        } else if (category.contains("SOA_QUARTERLY")) {
-            return generatePdfDocument(loanNo,fileName, projectSavePathSoaQuarterly,category);
+            return generatePdfDocument(filename, projectSavePathInterestCertificate, category);
 
         }
 
         return null;
     }
 
-    private ResponseEntity<byte[]> generatePdfDocument(String loanNo, String fileName, String projectSavePathPaymentReminder,String category) throws IOException {
+    private ResponseEntity<byte[]> generatePdfDocument(String fileName, String projectSavePathPaymentReminder, String category) throws IOException {
+        String loanNo;
+        if (fileName.contains("@")) {
+            int underscoreIndex = fileName.indexOf("_");
+            loanNo = fileName.substring(0, underscoreIndex);
+            fileName += ".pdf";
+        } else {
+            loanNo = fileName;
+        }
+
+
         Path filePath = Paths.get(projectSavePathPaymentReminder);
         File pdfFile = new File(filePath + fileName);
         System.out.println("filepath" + filePath);
@@ -431,8 +452,7 @@ public class ServiceImpl implements Service {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", fileName);
-        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()),category);
-
+        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()), category);
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 
