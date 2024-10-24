@@ -3,6 +3,7 @@ package com.bulkSms.Repository;
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.DocumentDetails;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -31,15 +32,10 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     Optional<DocumentDetails> findDataByLoanNo(String loanNumber,String category);
 
     @Modifying
-    @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName and d.category=:category AND d.uploadedTime = (\n" +
-            "      SELECT MAX(d2.uploadedTime) \n" +
-            "      FROM DocumentDetails d2 \n" +
-            "      WHERE d2.fileName = :fileName \n" +
-            "        AND d2.category = :category\n" +
-            "  )")
+    @Query("UPDATE DocumentDetails d SET d.downloadCount = d.downloadCount + 1, d.lastDownload = :currentDownloadTime WHERE d.fileName = :fileName and d.category=:category")
     void updateDownloadCountBySmsLink(String fileName, Timestamp currentDownloadTime,String category);
     @Query("SELECT e FROM DocumentDetails e WHERE e.jobId=:jobId")
-    List<DocumentDetails> finByJobId(Long jobId);
+    List<DocumentDetails> finByJobId(Long jobId, Pageable pageable);
     @Procedure(procedureName = "increment_sequence")
     Long incrementSequence(String seq_name);
 

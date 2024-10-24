@@ -1,6 +1,7 @@
 package com.bulkSms.Utility;
 
 import com.bulkSms.Entity.DataUpload;
+import com.bulkSms.Model.GetDataForSendSms;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,7 +48,7 @@ public class SmsUtility {
 
 
     @Async
-    public void sendTextMsgToUser(DataUpload smsSendDetails) throws Exception {
+    public void sendTextMsgToUser(GetDataForSendSms smsSendDetails) throws Exception {
         String mobileNumber = smsSendDetails.getMobileNumber();
         String key = "/" + smsSendDetails.getCertificateCategory() + "/" +smsSendDetails.getLoanNumber();
         String smsBody = makeSmsCustomBody(smsSendDetails, key);
@@ -73,7 +74,7 @@ public class SmsUtility {
     }
 
 
-    private String makeSmsCustomBody(DataUpload smsSendDetails, String key) {
+    private String makeSmsCustomBody(GetDataForSendSms smsSendDetails, String key) {
         String smsBody=null;
 
         if (smsSendDetails.getCertificateCategory().equals("ADHOC")) {
@@ -82,13 +83,13 @@ public class SmsUtility {
                     "Exclusion list link:- https://bit.ly/SHDFCEL";
 
         } else if (smsSendDetails.getCertificateCategory().equals("SOA")) {
-            smsBody = soaTemplate + kitBaseurl + key;
+            smsBody = soaTemplate + kitBaseurl + key+"@"+smsSendDetails.getFileSequenceNo();
 
         } else if (smsSendDetails.getCertificateCategory().equals("INTEREST_CERTIFICATE")) {
 
-            smsBody = interestCertificateTemplate + kitBaseurl + key;
+            smsBody = interestCertificateTemplate + kitBaseurl + key+"@"+smsSendDetails.getFileSequenceNo();
         } else if (smsSendDetails.getCertificateCategory().equals("SOA_QUARTERLY")) {
-            smsBody=  soaQuarterly + kitBaseurl + key;
+            smsBody=  soaQuarterly + kitBaseurl + key+"@"+smsSendDetails.getFileSequenceNo();
 
         }
         return smsBody;
