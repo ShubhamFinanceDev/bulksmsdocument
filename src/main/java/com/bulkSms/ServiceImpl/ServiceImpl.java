@@ -82,7 +82,11 @@ public class ServiceImpl implements Service {
         return category.equals("ADHOC") ? projectSavePathAdhoc :
                 category.equals("SOA") ? projectSavePathSoa :
                         category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+
                                 category.equals(" SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+
+                                category.equals("SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+
                                 category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
@@ -384,7 +388,8 @@ public class ServiceImpl implements Service {
     }
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
-        System.out.println(loanNo+", category "+category);
+
+        System.out.println("decode loan no"+ loanNo);
         DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
 
         if (documentReader == null) {
@@ -409,7 +414,9 @@ public class ServiceImpl implements Service {
 
         } else if (category.contains("SOA_QUARTERLY")) {
             return generatePdfDocument(loanNo,fileName, projectSavePathSoaQuarterly,category);
+
             
+
         }
 
         return null;
