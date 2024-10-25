@@ -31,6 +31,7 @@ public class CsvFileUtility {
     public void readCsvFile(InputStream inputStream) throws Exception {
         List<DataUpload> dataUploadList = new ArrayList<>();
         Set<String> uniqueRecords = new HashSet<>();  // To store unique key combinations
+        Date d1 = new Date();
 
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8")); CSVParser csvParser = new CSVParser(bReader, CSVFormat.DEFAULT.withDelimiter('|').withTrim())) {
 
@@ -57,6 +58,9 @@ public class CsvFileUtility {
                 if (existingDataUpload.isPresent()) {
                     DataUpload dataUpload = existingDataUpload.get();
                     dataUpload.setMobileNumber(mobileNo);
+
+                    dataUpload.setUpload_date(java.sql.Date.valueOf(java.time.LocalDate.now()));
+
                     dataUpload.setSmsFlag("N");
                     dataUploadRepo.save(dataUpload);
                 } else {
@@ -65,8 +69,8 @@ public class CsvFileUtility {
                     dataUpload.setLoanNumber(record.get(0));
                     dataUpload.setMobileNumber(record.get(1));
                     dataUpload.setCertificateCategory(record.get(2));
+                    dataUpload.setUpload_date(java.sql.Date.valueOf(java.time.LocalDate.now()));
                     dataUpload.setSmsFlag("N");
-
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
