@@ -88,61 +88,70 @@ public class ServiceImpl implements Service {
 
     @Transactional
     public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
-
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
         String copyPath = destinationStorage(category);
         long count = 0L;
+        long sequenceNo = 10000;
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
 
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
-            for (Path subDir : directoryStream) {
-                File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        // Create a File object for the specified folder path
+        File folder = new File(folderPath);
 
-                if (pdfFiles.length > 0) {
-                    PDFMergerUtility pdfMerger = new PDFMergerUtility();
-                    for (File pdfFile : pdfFiles) {
-                        pdfMerger.addSource(pdfFile);
-                    }
-                    Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
+        // Check if the folder exists and is indeed a directory
+        if (folder.exists() && folder.isDirectory()) {
+            // List all PDF files directly in the specified folder
+            File[] pdfFiles = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+
+            if (pdfFiles != null && pdfFiles.length > 0) {
+                System.out.println("Found PDF files in: " + folderPath);
+
+                PDFMergerUtility pdfMerger = new PDFMergerUtility();
+                for (File pdfFile : pdfFiles) {
+                    pdfMerger.addSource(pdfFile);
+                    System.out.println("Adding PDF file: " + pdfFile.getName());
+
+                    // Set the destination file name
+                    Path mergedPDFPath = Path.of(copyPath, pdfFile.getName().replace(".pdf","_") + sequenceNo + ".pdf");
                     pdfMerger.setDestinationFileName(mergedPDFPath.toString());
-                    pdfMerger.mergeDocuments(null); // Merges the PDFs
-                    System.out.println();
+                    pdfMerger.mergeDocuments(null);
                     System.out.println("Merged and copied PDF to: " + mergedPDFPath);
-                    DocumentDetails documentReader = new DocumentDetails();
 
+                    DocumentDetails documentReader = new DocumentDetails();
                     documentReader.setJobId(jobAuditTrail.getJobId());
-                    documentReader.setFileName(String.valueOf(subDir.getFileName()));
+                    documentReader.setFileName(pdfFile.getName());
                     documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
                     documentReader.setCategory(category);
                     documentReader.setDownloadCount(0L);
+                    documentReader.setSequenceNo(sequenceNo);
                     documentReaderList.add(documentReader);
                     count++;
-                    documentDetailsRepo.save(documentReader);
 
+                    // Save document details to the repository
+                    documentDetailsRepo.save(documentReader);
                     jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
                     commonResponse.setMsg("All PDF files copied successfully.");
-
+                    sequenceNo++;
                 }
+            } else{
+                System.out.println("No PDF files found in: " + folderPath);
             }
-            setJobResponse(response, jobAuditTrail.getJobId());
-            response.setCommonResponse(commonResponse);
-            response.setDownloadCount(count);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            commonResponse.setMsg("An error occurred while copying the file " + e.getMessage());
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
-
+        } else {
+            commonResponse.setMsg("The specified path is not a valid directory: " + folderPath);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonResponse);
         }
 
+        setJobResponse(response, jobAuditTrail.getJobId());
+        response.setCommonResponse(commonResponse);
+        response.setDownloadCount(count);
+        return ResponseEntity.ok(response);
     }
+
 
 
     private void setJobResponse(ResponseOfFetchPdf responseOfFetchPdf, Long jobId) {
