@@ -104,7 +104,7 @@ public class ServiceImpl implements Service {
             if (category.equals("ADHOC")) {
                 try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
                     for (Path subDir : directoryStream) {
-                        if (count == 0) {count++; continue;}  // Skip the first iteration
+//                        if (count == 0) {count++; continue;}  // Skip the first iteration
                         File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
                         if (pdfFiles.length > 0) {
                             PDFMergerUtility pdfMerger = new PDFMergerUtility();
