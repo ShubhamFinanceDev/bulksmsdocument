@@ -1,6 +1,7 @@
 package com.bulkSms.Utility;
 
-import com.bulkSms.Entity.DataUpload;
+import com.bulkSms.Repository.DocumentDetailsRepo;
+import com.bulkSms.Model.DataUploadWithSequence;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,9 @@ import java.util.HashMap;
 public class SmsUtility {
     @Autowired
     private EncodingUtils encodingUtils;
+
+    @Autowired
+    private DocumentDetailsRepo documentDetailsRepo;
 
     @Value("${sms.url}")
     private String smsUrl;
@@ -47,9 +51,16 @@ public class SmsUtility {
 
 
     @Async
-    public void sendTextMsgToUser(DataUpload smsSendDetails) throws Exception {
+    public void sendTextMsgToUser(DataUploadWithSequence smsSendDetails) throws Exception {
+
         String mobileNumber = smsSendDetails.getMobileNumber();
-        String key = "/" + smsSendDetails.getCertificateCategory() + "/" +encodingUtils.encode(smsSendDetails.getLoanNumber());
+        String key;
+        if((smsSendDetails.getCertificateCategory()).equals("ADHOC")) {
+            key = "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber());
+
+        }else {
+            key = "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber() + "_" + smsSendDetails.getFileSequenceNo());
+        }
         String smsBody = makeSmsCustomBody(smsSendDetails, key);
 
 
@@ -73,7 +84,7 @@ public class SmsUtility {
     }
 
 
-    private String makeSmsCustomBody(DataUpload smsSendDetails, String key) {
+    private String makeSmsCustomBody(DataUploadWithSequence smsSendDetails, String key) {
         String smsBody=null;
 
         if (smsSendDetails.getCertificateCategory().equals("ADHOC")) {
@@ -94,6 +105,6 @@ public class SmsUtility {
         return smsBody;
     }
 
-
 }
+
 

@@ -25,6 +25,6 @@ public class DocumentDetails {
     private String category;
     @Column(name = "last_download")
     private Timestamp lastDownload;
-    @Column(name = "sequence_number")
+    @Column(name = "file_sequence")
     private long sequenceNo;
 }

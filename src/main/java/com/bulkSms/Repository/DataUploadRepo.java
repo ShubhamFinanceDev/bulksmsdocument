@@ -2,18 +2,17 @@ package com.bulkSms.Repository;
 
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Model.DashboardDataList;
+import com.bulkSms.Model.DataUploadWithSequence;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
-
-    @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'N' and d.loanNumber in (select e.fileName from DocumentDetails e where e.category=:smsCategory)")
-    Page<DataUpload> findByCategoryAndSmsFlagNotSent(String smsCategory, Pageable pageable);
 
     @Query("select d from DataUpload d where d.certificateCategory = :smsCategory and d.smsFlag = 'Y'")
     List<DataUpload> findBySmsCategoryOfSendSms(String smsCategory, Pageable pageable);
@@ -62,4 +61,22 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
 
     @Query("SELECT d FROM DataUpload d WHERE d.loanNumber = :loanNumber and d.certificateCategory = :smsCategory")
     Optional<DataUpload> findByloanNumber(String loanNumber, String smsCategory);
+
+    @Query("SELECT new com.bulkSms.Model.DataUploadWithSequence(" +
+            "d.id, d.loanNumber, d.mobileNumber, d.certificateCategory, " +
+            "dd.sequenceNo) " +
+            "FROM DataUpload d " +
+            "JOIN DocumentDetails dd ON d.loanNumber = dd.fileName " +
+            "AND d.certificateCategory = dd.category " +
+            "LEFT JOIN BulkSms sd ON d.id = sd.dataUpload.id " +
+            "WHERE d.smsFlag = 'N' " +
+            "AND d.certificateCategory = :smsCategory " +
+            "AND dd.sequenceNo = (" +
+            "   SELECT MAX(sub.sequenceNo) " +
+            "   FROM DocumentDetails sub " +
+            "   WHERE sub.fileName = dd.fileName " +
+            "   AND sub.category = dd.category " +
+            ")")
+    Page<DataUploadWithSequence> findByCategoryAndSmsFlagNotSent(
+            @Param("smsCategory") String smsCategory, Pageable pageable);
 }

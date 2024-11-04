@@ -10,7 +10,9 @@ import com.bulkSms.Repository.*;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
+import com.bulkSms.Utility.FetchAdhocUtility;
 import com.bulkSms.Utility.SmsUtility;
+import com.bulkSms.Model.DataUploadWithSequence;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +38,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Slf4j
 @org.springframework.stereotype.Service
@@ -62,6 +63,8 @@ public class ServiceImpl implements Service {
     private SmsUtility smsUtility;
     @Autowired
     private DataUploadRepo dataUploadRepo;
+    @Autowired
+    private FetchAdhocUtility fetchAdhocCategoryPdfs;
 
     @Value("${project.save.path.adhoc}")
     private String projectSavePathAdhoc;
@@ -94,64 +97,98 @@ public class ServiceImpl implements Service {
         List<DocumentDetails> documentReaderList = new ArrayList<>();
         String copyPath = destinationStorage(category);
         long count = 0L;
-        long sequenceNo = 10000;
+
+        // Get the last sequence number from the database
+        long sequenceNo = documentDetailsRepo.findMaxSequenceNo() + 1;
+
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
 
-        // Create a File object for the specified folder path
-        File folder = new File(folderPath);
-
-        // Check if the folder exists and is indeed a directory
-        if (folder.exists() && folder.isDirectory()) {
-            // List all PDF files directly in the specified folder
-            File[] pdfFiles = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
-
-            if (pdfFiles != null && pdfFiles.length > 0) {
-                System.out.println("Found PDF files in: " + folderPath);
-
-                PDFMergerUtility pdfMerger = new PDFMergerUtility();
-                for (File pdfFile : pdfFiles) {
-                    pdfMerger.addSource(pdfFile);
-                    System.out.println("Adding PDF file: " + pdfFile.getName());
-
-                    // Set the destination file name
-                    Path mergedPDFPath = Path.of(copyPath, pdfFile.getName().replace(".pdf","_") + sequenceNo + ".pdf");
-                    pdfMerger.setDestinationFileName(mergedPDFPath.toString());
-                    pdfMerger.mergeDocuments(null);
-                    System.out.println("Merged and copied PDF to: " + mergedPDFPath);
-
-                    DocumentDetails documentReader = new DocumentDetails();
-                    documentReader.setJobId(jobAuditTrail.getJobId());
-                    documentReader.setFileName(pdfFile.getName());
-                    documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                    documentReader.setCategory(category);
-                    documentReader.setDownloadCount(0L);
-                    documentReader.setSequenceNo(sequenceNo);
-                    documentReaderList.add(documentReader);
-                    count++;
-
-                    // Save document details to the repository
-                    documentDetailsRepo.save(documentReader);
-                    jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                    commonResponse.setMsg("All PDF files copied successfully.");
-                    sequenceNo++;
-                }
-            } else{
-                System.out.println("No PDF files found in: " + folderPath);
-            }
+        if (category.equals("ADHOC")) {
+            return ResponseEntity.ok(
+                    fetchAdhocCategoryPdfs.fetchAdhocCategoryfiles(folderPath, jobAuditTrail, category, copyPath)
+            );
         } else {
-            commonResponse.setMsg("The specified path is not a valid directory: " + folderPath);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonResponse);
-        }
+            File folder = new File(folderPath);
 
-        setJobResponse(response, jobAuditTrail.getJobId());
-        response.setCommonResponse(commonResponse);
-        response.setDownloadCount(count);
-        return ResponseEntity.ok(response);
+            if (folder.exists() && folder.isDirectory()) {
+                File[] pdfFiles = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+
+                if (pdfFiles != null && pdfFiles.length > 0) {
+                    System.out.println("Found PDF files in: " + folderPath);
+
+                    PDFMergerUtility pdfMerger = new PDFMergerUtility();
+                    for (File pdfFile : pdfFiles) {
+                        String pdfName = pdfFile.getName();
+                        String extractedNumber = extractNumberFromPdfName(pdfName);
+
+                        if (extractedNumber != null) {
+                            System.out.println("Extracted number from PDF name: " + extractedNumber);
+                        } else {
+                            System.out.println("Invalid filename format: " + pdfName);
+                            continue;  // Skip invalid filenames
+                        }
+
+                        pdfMerger.addSource(pdfFile);
+                        Path mergedPDFPath = Path.of(copyPath, extractedNumber + "_" + sequenceNo + ".pdf");
+                        pdfMerger.setDestinationFileName(mergedPDFPath.toString());
+                        pdfMerger.mergeDocuments(null);
+                        System.out.println("Merged and copied PDF to: " + mergedPDFPath);
+
+                        DocumentDetails documentReader = new DocumentDetails();
+                        documentReader.setJobId(jobAuditTrail.getJobId());
+                        documentReader.setFileName(extractedNumber);  // Save only the number
+                        documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+                        documentReader.setCategory(category);
+                        documentReader.setDownloadCount(0L);
+                        documentReader.setSequenceNo(sequenceNo);  // Use the incremented sequence number
+                        documentReaderList.add(documentReader);
+
+                        count++;
+                        sequenceNo++;  // Increment for the next PDF
+
+                        documentDetailsRepo.save(documentReader);
+                        jobAuditTrailRepo.updateEndStatus(
+                                "Number of files saved into bucket: " + count,
+                                "complete",
+                                Timestamp.valueOf(LocalDateTime.now()),
+                                jobAuditTrail.getJobId()
+                        );
+                        commonResponse.setMsg("All PDF files copied successfully.");
+                    }
+                } else {
+                    System.out.println("No PDF files found in: " + folderPath);
+                }
+            } else {
+                commonResponse.setMsg("The specified path is not a valid directory: " + folderPath);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commonResponse);
+            }
+
+            setJobResponse(response, jobAuditTrail.getJobId());
+            response.setCommonResponse(commonResponse);
+            response.setDownloadCount(count);
+            return ResponseEntity.ok(response);
+        }
     }
 
+    // Extracts the number part between "SOA_" and the next "_"
+    private String extractNumberFromPdfName(String pdfName) {
+        try {
+            // Find the first and second underscores in the filename
+            int start = pdfName.indexOf('_') + 1;  // First underscore after "SOA"
+            int end = pdfName.indexOf('_', start);  // Second underscore
+
+            if (start > 0 && end > start) {
+                return pdfName.substring(start, end);  // Extract the desired number
+            }
+            return null;  // Invalid format if underscores are not found properly
+        } catch (Exception e) {
+            System.out.println("Error extracting number from: " + pdfName + " - " + e.getMessage());
+            return null;
+        }
+    }
 
 
     private void setJobResponse(ResponseOfFetchPdf responseOfFetchPdf, Long jobId) {
@@ -167,6 +204,8 @@ public class ServiceImpl implements Service {
         }
         responseOfFetchPdf.setListOfPdfNames(readerList);
     }
+
+
 
     @Override
     public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
@@ -229,13 +268,15 @@ public class ServiceImpl implements Service {
 
             while (true) {
                 Pageable pageable = PageRequest.of(batchCount, requestBatchSize);
-                Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory, pageable);
+                Page<DataUploadWithSequence> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory, pageable);
+
                 if (smsCategoryDetails.hasContent()) {
-                    List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
+                    List<DataUploadWithSequence> dataUploadList = smsCategoryDetails.getContent();
                     log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
                     String category =smsCategory;
                     executeSmsServiceThread(dataUploadList, content,category); //start send sms thread
                     batchCount++;
+                    System.out.println("working fine   ");
 
                 } else {
                     break;
@@ -258,7 +299,7 @@ public class ServiceImpl implements Service {
     }
 
 
-    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content,String category) throws Exception {
+    private void executeSmsServiceThread(List<DataUploadWithSequence> dataUploadList, List<Object> content,String category) throws Exception {
         LocalDateTime timestamp = LocalDateTime.now();
         log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
         int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -278,22 +319,23 @@ public class ServiceImpl implements Service {
 
             int end = Math.min(start + batchSize, dataUploadList.size());
             // Sublist for each thread to process
-            List<DataUpload> sublist = dataUploadList.subList(start, end);
+            List<DataUploadWithSequence> sublist = dataUploadList.subList(start, end);
             log.info("Thread {} execution initiated and processing list index from {} to {}", numThreads, start, end);
             // Submit a task to process this sublist
             executorService.submit(() -> {
-                for (DataUpload element : sublist) {
+                for (DataUploadWithSequence element : sublist) {
                     try {
+                        System.out.println(element.toString());
+                                smsUtility.sendTextMsgToUser(element);
+                                bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
+                                Map<Object, Object> map = new HashMap<>();
+                                map.put("loanNumber", element.getLoanNumber());
+                                map.put("mobileNumber", element.getMobileNumber());
+                                map.put("timestamp", timestamp);
+                                map.put("smsFlag", "success");
+                                map.put("category", category);
+                                content.add(map);
 
-                        smsUtility.sendTextMsgToUser(element);
-                        bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
-                        Map<Object, Object> map = new HashMap<>();
-                        map.put("loanNumber", element.getLoanNumber());
-                        map.put("mobileNumber", element.getMobileNumber());
-                        map.put("timestamp", timestamp);
-                        map.put("smsFlag", "success");
-                        map.put("category",category);
-                        content.add(map);
 //                        }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -395,8 +437,18 @@ public class ServiceImpl implements Service {
 
     public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
 
+        String baseLoanNo="";
+        int sequenceNo = 0;
+        DocumentDetails documentReader;
+        if (loanNo.contains("_")) {
+            String[] parts = loanNo.split("_");
+            baseLoanNo = parts[0]; // Base loan number (e.g., "5018647")
+            sequenceNo = Integer.parseInt(parts[1]);
+            documentReader = documentDetailsRepo.findByLoanNoAndCategoryMaxSequence(baseLoanNo, category, sequenceNo);
+        } else {
+            documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
+        }
         System.out.println("decode loan no"+ loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
 
         if (documentReader == null) {
             System.out.println("File not found or invalid loanNo");

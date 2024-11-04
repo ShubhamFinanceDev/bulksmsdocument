@@ -23,6 +23,9 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     @Query("select e from DocumentDetails e where e.fileName =:loanNo and e.category=:category")
     DocumentDetails findByLoanNoAndCategory(String loanNo,String category);
 
+    @Query("SELECT e FROM DocumentDetails e WHERE e.fileName = :loanNo AND e.category = :category and e.sequenceNo=:sequenceNo")
+    DocumentDetails findByLoanNoAndCategoryMaxSequence(String loanNo,String category,int sequenceNo);
+
     @Query("SELECT COUNT(d.id), d.category FROM DocumentDetails d WHERE d.downloadCount > 0 GROUP BY d.category")
     List<Object[]> countDownloadByCategory();
 
@@ -34,4 +37,8 @@ public interface DocumentDetailsRepo extends JpaRepository<DocumentDetails, Long
     void updateDownloadCountBySmsLink(String fileName, Timestamp currentDownloadTime,String category);
     @Query("SELECT e FROM DocumentDetails e WHERE e.jobId=:jobId")
     List<DocumentDetails> finByJobId(Long jobId);
+
+    @Query("SELECT COALESCE(MAX(d.sequenceNo), 0) FROM DocumentDetails d")
+    Long findMaxSequenceNo();
+
 }
