@@ -41,7 +41,7 @@ public class SmsUtility {
     private String soaTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Statement+of+Account+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String interestCertificateTemplate = "Dear+Customer,%0aPlease+download+your+Yearly+Interest+Certificate+from+below+link+for+the+period+of+01-Apr-" + (year - 1) + "+to+31-Mar-" + year + ".%0aRegards%0aShubham+Housing+Development+Finance+Company+Ltd%0aLink: ";
     private String reminderPayment = "";
-    private String soaQuarterly = "Dear Customer, Please download your Quarterly Statement of Account from below link for the period of Apr’24 to Jun’24.\n" +
+    private String soaQuarterly = "Dear Customer, Please download your Quarterly Statement of Account from below link for the period of Jul’24 to Sep’24.\n" +
             "Regards\n" +
             "Shubham Housing Development Finance Company Ltd\n" +
             "Link: ";
