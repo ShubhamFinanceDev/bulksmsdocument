@@ -106,20 +106,10 @@ public class ServiceImpl implements Service {
                     for (Path subDir : directoryStream) {
 //                        if (count == 0) {count++; continue;}  // Skip the first iteration
                         File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
-                        if (pdfFiles != null && pdfFiles.length > 0) {
-                            // Sort the PDF files in sequence, ensuring the first file ends with "1" if available
-                            pdfFiles = Arrays.stream(pdfFiles)
-                                    .sorted(Comparator.comparing(file -> {
-                                        String fileName = file.getName().toLowerCase();
-                                        // Give priority to files ending in "1.pdf"
-                                        return fileName.endsWith("1.pdf") ? "" : fileName;
-                                    }))
-                                    .toArray(File[]::new);
-
+                        if (pdfFiles.length > 0) {
                             PDFMergerUtility pdfMerger = new PDFMergerUtility();
-                            for (File pdfFile : pdfFiles) {
-                                pdfMerger.addSource(pdfFile);
-                            }
+                            for (File pdfFile : pdfFiles) pdfMerger.addSource(pdfFile);
+
                             Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
                             pdfMerger.setDestinationFileName(mergedPDFPath.toString());
                             pdfMerger.mergeDocuments(null);
@@ -177,8 +167,7 @@ public class ServiceImpl implements Service {
     private String extractFilename(String fileName) {
         int firstUnderscore = fileName.indexOf('_');
         int secondUnderscore = fileName.indexOf('_', firstUnderscore + 1);
-        int thirdUnderscore = fileName.indexOf('_', secondUnderscore + 1);
-        return fileName.substring(secondUnderscore + 1, thirdUnderscore);
+        return fileName.substring(firstUnderscore + 1, secondUnderscore);
     }
 
     private void handleException(Exception e, CommonResponse commonResponse, JobAuditTrail jobAuditTrail) {
