@@ -483,7 +483,8 @@ public class ServiceImpl implements Service {
                 detailOfCount = dataUploadRepo.findUnsendSmsCountByType();
             } else {
 
-                unsendSmsDetails = dataUploadRepo.findBySmsCategoryForUnsendSms(smsCategory, pageable);
+//                unsendSmsDetails = dataUploadRepo.findBySmsCategoryForUnsendSms(smsCategory, pageable);
+                unsendSmsDetails = dataUploadRepo.findBySmsCategoryForUnsendSms(smsCategory);
                 detailOfCount = dataUploadRepo.findUnsendSmsCountByCategory(smsCategory);
             }
 

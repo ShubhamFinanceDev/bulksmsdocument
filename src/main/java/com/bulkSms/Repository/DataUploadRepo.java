@@ -56,7 +56,7 @@ public interface DataUploadRepo extends JpaRepository<DataUpload, Long> {
             "LEFT JOIN BulkSms sd ON d.id = sd.dataUpload.id\n" +
             "WHERE d.smsFlag = 'N' \n" +
             "   AND d.certificateCategory = :smsCategory")
-    List<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory, Pageable pageable);
+    List<DataUpload> findBySmsCategoryForUnsendSms(String smsCategory);
 
     @Query("select count(d) from DataUpload d \n" +
             "inner join DocumentDetails dd \n" +
