@@ -167,7 +167,8 @@ public class ServiceImpl implements Service {
     private String extractFilename(String fileName) {
         int firstUnderscore = fileName.indexOf('_');
         int secondUnderscore = fileName.indexOf('_', firstUnderscore + 1);
-        return fileName.substring(firstUnderscore + 1, secondUnderscore);
+        int thirdUnderscore = fileName.indexOf('_', secondUnderscore + 1);
+        return fileName.substring(secondUnderscore + 1, thirdUnderscore);
     }
 
     private void handleException(Exception e, CommonResponse commonResponse, JobAuditTrail jobAuditTrail) {
