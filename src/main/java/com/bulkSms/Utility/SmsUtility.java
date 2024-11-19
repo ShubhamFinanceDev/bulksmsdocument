@@ -37,6 +37,8 @@ public class SmsUtility {
     private String smsSender;
     @Value("${kit.url}")
     private String kitBaseurl;
+    @Value("${submit.feedback.url}")
+    private String submitFeedbackUrl;
 
     int year = Year.now().getValue();
 
@@ -51,16 +53,11 @@ public class SmsUtility {
 
 
     @Async
-    public void sendTextMsgToUser(DataUploadWithSequence smsSendDetails) throws Exception {
+    public void sendTextMsgToUser(DataUploadWithSequence smsSendDetails) {
 
         String mobileNumber = smsSendDetails.getMobileNumber();
-        String key;
-        if((smsSendDetails.getCertificateCategory()).equals("ADHOC")) {
-            key = "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber());
+        String key = "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber());
 
-        }else {
-            key = "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber() + "_" + smsSendDetails.getFileSequenceNo());
-        }
         String smsBody = makeSmsCustomBody(smsSendDetails, key);
 
 
@@ -93,16 +90,34 @@ public class SmsUtility {
                     "Exclusion list link:- https://bit.ly/SHDFCEL";
 
         } else if (smsSendDetails.getCertificateCategory().equals("SOA")) {
-            smsBody = soaTemplate + kitBaseurl + key;
+            smsBody = soaTemplate + kitBaseurl + "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber() + "_" + smsSendDetails.getFileSequenceNo());
 
         } else if (smsSendDetails.getCertificateCategory().equals("INTEREST_CERTIFICATE")) {
 
-            smsBody = interestCertificateTemplate + kitBaseurl + key;
+            smsBody = interestCertificateTemplate + kitBaseurl + "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber() + "_" + smsSendDetails.getFileSequenceNo());;
         } else if (smsSendDetails.getCertificateCategory().equals("SOA_QUARTERLY")) {
-            smsBody=  soaQuarterly + kitBaseurl + key;
+            smsBody=  soaQuarterly + kitBaseurl + "/" + smsSendDetails.getCertificateCategory() + "/" + encodingUtils.encode(smsSendDetails.getLoanNumber() + "_" + smsSendDetails.getFileSequenceNo());;
 
         }
         return smsBody;
+    }
+
+    public void sendFeedbackFormToUser(String formId, String contactNo){
+
+        String smsBody = soaQuarterly + submitFeedbackUrl + "/" + formId + "/" + contactNo;
+
+        String  url = smsUrl + "?method=" + smsMethod + "&api_key=" + smsKey + "&to=" + contactNo +
+                "&sender=" + smsSender + "&message=" + smsBody + "&format=" + smsFormat + "&unicode=auto"+"&shortUrl=1";
+
+        RestTemplate restTemplate = new RestTemplate();
+        HashMap<String, String> otpResponse = restTemplate.getForObject(url, HashMap.class);
+
+        if (otpResponse != null && "OK".equals(otpResponse.get("status"))) {
+            log.info("SMS Sent Successfully to {}", contactNo);
+            System.out.println(smsBody);
+        } else {
+            log.error("Failed to send SMS to {}: {}", contactNo, otpResponse);
+        }
     }
 
 }

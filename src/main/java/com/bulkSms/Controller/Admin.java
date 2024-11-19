@@ -1,8 +1,10 @@
 package com.bulkSms.Controller;
 
+import com.bulkSms.Model.FeedbackResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
+import com.bulkSms.Utility.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +29,8 @@ public class Admin {
     @Autowired
     private Service service;
 
+    @Autowired
+    private FeedbackUtility3 feedbackUtility;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegistrationDetails registerUserDetails) throws Exception {
@@ -85,6 +91,18 @@ public class Admin {
         }catch (Exception e) {
             log.error( e.getMessage());
             throw new Exception(e.getMessage());
+        }
+    }
+
+    @GetMapping("/feedback")
+    public ResponseEntity<?> feedbackResponse() {
+        try {
+            FeedbackResponse feedbackData = feedbackUtility.getFeedBack();
+            return new ResponseEntity<>(feedbackData, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
         }
     }
 

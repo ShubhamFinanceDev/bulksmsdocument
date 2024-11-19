@@ -65,6 +65,10 @@ public class ServiceImpl implements Service {
     private DataUploadRepo dataUploadRepo;
     @Autowired
     private FetchAdhocUtility fetchAdhocCategoryPdfs;
+    @Autowired
+    private UserFeedbackResponseRepo userFeedbackResponseRepo;
+    @Autowired
+    private FeedbackRepo feedbackRepo;
 
     @Value("${project.save.path.adhoc}")
     private String projectSavePathAdhoc;
@@ -542,5 +546,36 @@ public class ServiceImpl implements Service {
         }
     }
 
+
+    @Override
+    public void showFeedbackForm(String formId, String contactNo) {
+
+        UserFeedbackResponse feedback = new UserFeedbackResponse();
+        feedback.setFormId(formId);
+        feedback.setContactNo(contactNo);
+        FeedbackRecord feedbackRecord = feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
+        if(feedbackRecord.getFeedbackSubmitFlag().equals("Y")){
+            throw new RuntimeException("Already Submitted");
+        }else {
+            feedbackRepo.save(feedbackRecord);
+        }
+    }
+
+    @Override
+    public void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback) {
+        feedback.setFormId(formId);
+        feedback.setContactNo(contactNo);
+        feedback.setFeedbackFlag("Submitted");
+
+        userFeedbackResponseRepo.save(feedback);
+
+        FeedbackRecord feedbackRecord = feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
+        if (feedbackRecord != null) {
+            feedbackRecord.setFeedbackSubmitFlag("Y");
+            feedbackRepo.save(feedbackRecord);
+        } else {
+            throw new RuntimeException();
+        }
+    }
 
 }

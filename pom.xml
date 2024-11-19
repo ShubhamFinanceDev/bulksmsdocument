@@ -99,7 +99,14 @@
             <artifactId>pdfbox</artifactId>
             <version>2.0.26</version>
         </dependency>
-    </dependencies>
+		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-thymeleaf -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+			<version>3.3.4</version>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>

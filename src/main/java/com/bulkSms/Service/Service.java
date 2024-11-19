@@ -1,5 +1,6 @@
 package com.bulkSms.Service;
 
+import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Model.SmsResponse;
@@ -28,4 +29,8 @@ public interface Service {
     ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo,String category) throws Exception;
 
     ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
+
+    void showFeedbackForm(String formId, String contactNo);
+
+    void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback);
 }

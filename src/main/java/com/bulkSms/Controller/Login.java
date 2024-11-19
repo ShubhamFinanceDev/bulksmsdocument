@@ -1,10 +1,9 @@
 package com.bulkSms.Controller;
 
 import com.bulkSms.JwtAuthentication.JwtHelper;
-import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.JwtRequest;
 import com.bulkSms.Model.JwtResponse;
-import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Repository.UserFeedbackResponseRepo;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.EncodingUtils;
 import org.slf4j.Logger;
@@ -17,11 +16,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/sms-service")
@@ -35,6 +31,8 @@ public class Login {
     private Service service;
     @Autowired
     private EncodingUtils encodingUtils;
+    @Autowired
+    private UserFeedbackResponseRepo feedbackResponseRepo;
 
     @Autowired
     private JwtHelper helper;
