@@ -101,4 +101,10 @@ public class Login {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
         }
     }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public String exceptionHandler() {
+        return "Credentials Invalid !!";
+    }
+
 }

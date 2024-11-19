@@ -150,17 +150,17 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception {
-        CommonResponse commonResponse = new CommonResponse();
+    public List<Object> save(MultipartFile file) throws Exception {
 
         if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.csvBulksms(file.getInputStream());
-            dataUploadRepo.saveAll(dataUploadList);
-            commonResponse.setMsg("Csv file upload successfully");
+            return csvFileUtility.csvBulksms(file.getInputStream());
         } else {
-            commonResponse.setMsg("File is not a csv file");
+            List<Object> respond = new ArrayList<>();
+            Map<String,String> respond1 = new HashMap<>();
+            respond1.put("msg","file is not a csv file");
+            respond.add(respond1);
+            return respond;
         }
-        return ResponseEntity.ok(commonResponse);
     }
 
     @Override
