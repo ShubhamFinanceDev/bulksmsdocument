@@ -2,7 +2,6 @@ package com.bulkSms.ServiceImpl;
 
 
 import com.bulkSms.Entity.*;
-import com.bulkSms.Entity.BulkSms;
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Entity.Role;
 import com.bulkSms.Entity.UserDetail;
@@ -12,28 +11,34 @@ import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.CsvFileUtility;
 import com.bulkSms.Utility.EncodingUtils;
 import com.bulkSms.Utility.SmsUtility;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+@Slf4j
 @org.springframework.stereotype.Service
 public class ServiceImpl implements Service {
 
@@ -58,108 +63,110 @@ public class ServiceImpl implements Service {
     @Autowired
     private DataUploadRepo dataUploadRepo;
 
-    @Value("${project.save.path}")
-    private final String projectSavePath;
-    private final ResourceLoader resourceLoader;
+    @Value("${project.save.path.adhoc}")
+    private String projectSavePathAdhoc;
 
-    public ServiceImpl(ResourceLoader resourceLoader, @Value("${project.save.path}") String projectSavePath) {
-        this.resourceLoader = resourceLoader;
-        this.projectSavePath = projectSavePath;
+    @Value("${project.save.path.soa}")
+    private String projectSavePathSoa;
+    @Value("${project.save.path.intrest.certificate}")
+    private String projectSavePathInterestCertificate;
+
+    @Value("${project.save.path.payment.reminder}")
+    private String projectSavePathPaymentReminder;
+    @Value("${project.save.path.soa.quarterly}")
+    private String projectSavePathSoaQuarterly;
+
+    private ResourceLoader resourceLoader;
+
+    private String destinationStorage(String category) {
+        return category.equals("ADHOC") ? projectSavePathAdhoc :
+                category.equals("SOA") ? projectSavePathSoa :
+                        category.equals("INTEREST_CERTIFICATE") ? projectSavePathInterestCertificate :
+                                category.equals("SOA_QUARTERLY") ? projectSavePathSoaQuarterly :
+                                category.equals("Reminder_Payment") ? projectSavePathPaymentReminder : null;
     }
 
-    ;
+    @Transactional
+    public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
 
-    public ResponseEntity<?> fetchPdf(String folderPath) {
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
         List<DocumentDetails> documentReaderList = new ArrayList<>();
-        File sourceFolder = new File(folderPath);
-
+        String copyPath = destinationStorage(category);
+        long count = 0L;
         jobAuditTrail.setJobName("Upload-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
 
-        if (!sourceFolder.exists() || !sourceFolder.isDirectory()) {
-            commonResponse.setMsg("Source folder does not exist or is not a valid directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        File[] files = sourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Path.of(folderPath))) {
+            for (Path subDir : directoryStream) {
+                File[] pdfFiles = subDir.toFile().listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
 
-        if (files == null || files.length == 0) {
-            commonResponse.setMsg("No PDF files found in the specified directory.");
-            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        String baseDownloadUrl = "/sms-service/download-pdf/";
+                if (pdfFiles.length > 0) {
+                    PDFMergerUtility pdfMerger = new PDFMergerUtility();
+                    for (File pdfFile : pdfFiles) {
+                        pdfMerger.addSource(pdfFile);
+                    }
+                    Path mergedPDFPath = Path.of(copyPath, subDir.getFileName().toString() + ".pdf");
+                    pdfMerger.setDestinationFileName(mergedPDFPath.toString());
+                    pdfMerger.mergeDocuments(null); // Merges the PDFs
+                    System.out.println("Merged and copied PDF to: " + mergedPDFPath);
+                    DocumentDetails documentReader = new DocumentDetails();
 
-        for (File sourceFile : files) {
-            if (!sourceFile.exists() || !sourceFile.isFile()) {
-                commonResponse.setMsg("File " + sourceFile.getName() + " does not exist or is not a valid file.");
-                jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+                    documentReader.setJobId(jobAuditTrail.getJobId());
+                    documentReader.setFileName(String.valueOf(subDir.getFileName()));
+                    documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
+                    documentReader.setCategory(category);
+                    documentReader.setDownloadCount(0L);
+                    documentReaderList.add(documentReader);
+                    count++;
+                    documentDetailsRepo.save(documentReader);
+
+                    jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+                    commonResponse.setMsg("All PDF files copied successfully.");
+
+                }
             }
+            setJobResponse(response, jobAuditTrail.getJobId());
+            response.setCommonResponse(commonResponse);
+            response.setDownloadCount(count);
+            return ResponseEntity.ok(response);
 
-            String encodedName = encodingUtils.encode(sourceFile.getName().replace(".pdf", ""));
-            System.out.println("Encoded Name: " + encodedName + " ,Decoded Name: " + encodingUtils.decode(encodedName));
+        } catch (Exception e) {
+            commonResponse.setMsg("An error occurred while copying the file " + e.getMessage());
+            jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
 
-            Path sourcePath = sourceFile.toPath();
-            Path targetPath = Path.of(projectSavePath, sourcePath.getFileName().toString());
-
-            try {
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                DocumentDetails documentReader = new DocumentDetails();
-                documentReader.setJobId(jobAuditTrail.getJobId());
-                documentReader.setFileName(sourceFile.getName().replace(".pdf", ""));
-                documentReader.setUploadedTime(Timestamp.valueOf(LocalDateTime.now()));
-                documentReader.setDownloadUrl(baseDownloadUrl + encodedName);
-                documentReader.setDownloadCount(0L);
-
-                documentReaderList.add(documentReader);
-
-            } catch (IOException e) {
-                commonResponse.setMsg("An error occurred while copying the file " + sourceFile.getName() + ": " + e.getMessage());
-                jobAuditTrailRepo.updateIfException(commonResponse.getMsg(), "failed", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
-            }
         }
 
-        documentDetailsRepo.saveAll(documentReaderList);
-        jobAuditTrailRepo.updateEndStatus("Number of files saved into bucket: " + files.length, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
-        setResponse(response);
-        commonResponse.setMsg("All PDF files copied successfully with encoded names.");
-        response.setCommonResponse(commonResponse);
-        return ResponseEntity.ok(response);
     }
 
 
-    private void setResponse(ResponseOfFetchPdf response) {
-        List<DocumentDetails> documentReaderList = documentDetailsRepo.findAll();
+    private void setJobResponse(ResponseOfFetchPdf responseOfFetchPdf, Long jobId) {
+        List<DocumentDetails> latestCopedFile = documentDetailsRepo.finByJobId(jobId);
+
         List<ListResponse> readerList = new ArrayList<>();
-        for (DocumentDetails reader : documentReaderList) {
+        for (DocumentDetails reader : latestCopedFile) {
             ListResponse listResponse = new ListResponse();
             listResponse.setFileName(reader.getFileName());
-            listResponse.setDownloadCount(reader.getDownloadCount());
             listResponse.setUploadTime(reader.getUploadedTime().toLocalDateTime());
-            listResponse.setDownloadUrl(reader.getDownloadUrl());
+            listResponse.setCategory(reader.getCategory());
             readerList.add(listResponse);
         }
-        response.setListOfPdfNames(readerList);
+        responseOfFetchPdf.setListOfPdfNames(readerList);
     }
 
     @Override
-    public ResponseEntity<CommonResponse> save(MultipartFile file) throws Exception {
+    public ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception {
         CommonResponse commonResponse = new CommonResponse();
-
-        if (csvFileUtility.hasCsvFormat(file)) {
-            List<DataUpload> dataUploadList = csvFileUtility.csvBulksms(file.getInputStream());
-            dataUploadRepo.saveAll(dataUploadList);
-            commonResponse.setMsg("Csv file upload successfully");
-        } else {
-            commonResponse.setMsg("File is not a csv file");
-        }
+            if (csvFileUtility.hasCsvFormat(file)) {
+                csvFileUtility.readCsvFile(file.getInputStream());
+                commonResponse.setMsg("Files have been uploaded successfully.");
+            } else {
+                commonResponse.setMsg("File is not a csv file or empty");
+            }
         return ResponseEntity.ok(commonResponse);
     }
 
@@ -179,87 +186,137 @@ public class ServiceImpl implements Service {
         String roleName = registerUserDetails.getRole() != null ? registerUserDetails.getRole() : "ROLE_USER";
         role.setRole(roleName);
         role.setUserMaster(userDetails);
-
         userDetails.setRoleMaster(role);
-
         userDetailRepo.save(userDetails);
-
         registerUserDetails.setRole(role.getRole());
     }
 
+//    @Override
+//    public ResponseEntity<?> fetchPdfFileForDownload(String loanNo,String category) throws Exception {
+//        CommonResponse commonResponse = new CommonResponse();
+//        System.out.println(loanNo);
+//        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+//
+//        if (documentReader == null) {
+//            commonResponse.setMsg("File not found or invalid loanNo");
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+//        }
+//        if(category.contains("ADHOC"))
+//        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
+//        Resource resource = resourceLoader.getResource("file:" + filePath);
+//
+//        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
+//    }
+
     @Override
-    public ResponseEntity<?> fetchPdfFileForDownload(String loanNo) throws Exception {
-        CommonResponse commonResponse = new CommonResponse();
-        System.out.println(loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
-
-        if (documentReader == null) {
-            commonResponse.setMsg("File not found or invalid loanNo");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
-        Resource resource = resourceLoader.getResource("file:" + filePath);
-
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
-    }
-
-    @Override
-    public SmsResponse sendSmsToUser(String smsCategory) throws Exception {
+    public ResponseEntity<?> sendSmsToUser(String smsCategory) throws Exception {
         List<Object> content = new ArrayList<>();
-        LocalDateTime timestamp = LocalDateTime.now();
-        List<BulkSms> bulkSmsList = new ArrayList<>();
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
+            int requestBatchSize = 5000;
+            int batchCount = 0;
 
-            List<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory);
-            if (smsCategoryDetails != null && !smsCategoryDetails.isEmpty()) {
-                for (DataUpload smsSendDetails : smsCategoryDetails) {
+            while (true) {
+                Pageable pageable = PageRequest.of(batchCount, requestBatchSize);
+                Page<DataUpload> smsCategoryDetails = dataUploadRepo.findByCategoryAndSmsFlagNotSent(smsCategory, pageable);
+                if (smsCategoryDetails.hasContent()) {
+                    List<DataUpload> dataUploadList = smsCategoryDetails.getContent();
+                    log.info("List size fetched {} for batchCount {}", dataUploadList.size(), batchCount);
+                    String category =smsCategory;
+                    executeSmsServiceThread(dataUploadList, content,category); //start send sms thread
+                    batchCount++;
 
-                    String loanDetails="/sms-service/download-pdf/"+encodingUtils.encode(smsSendDetails.getLoanNumber());
-                    if(documentDetailsRepo.findDocumentByLoanNumber(loanDetails).isPresent()){
-
-                        smsUtility.sendTextMsgToUser(smsSendDetails);
-
-                        BulkSms bulkSms = new BulkSms();
-                        bulkSms.setSmsTimeStamp(timestamp);
-                        bulkSms.setDataUpload(smsSendDetails);
-                        bulkSmsList.add(bulkSms);
-
-                        smsSendDetails.setSmsFlag("Y");
-                        dataUploadRepo.save(smsSendDetails);
-
-                        Map<Object, Object> map = new HashMap<>();
-                        map.put("loanNumber", smsSendDetails.getLoanNumber());
-                        map.put("mobileNumber", smsSendDetails.getMobileNumber());
-                        map.put("timestamp", timestamp);
-                        map.put("smsFlag", "success");
-                        content.add(map);
-                    }
+                } else {
+                    break;
                 }
-                bulkSmsRepo.saveAll(bulkSmsList);
+            }
 
-            }
-            if(content.isEmpty()){
-                return new SmsResponse(0,"No unsent SMS found for category: "+smsCategory,content);
-            } else {
-                return new SmsResponse(content.size(),"success",content);
-            }
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
+        if (content.isEmpty()) {
+            commonResponse.setMsg("Data not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+        } else {
+            commonResponse.setMsg("Success");
+            return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(content.size(), commonResponse.getMsg(), content));
+
+        }
+    }
+
+
+    private void executeSmsServiceThread(List<DataUpload> dataUploadList, List<Object> content,String category) throws Exception {
+        LocalDateTime timestamp = LocalDateTime.now();
+        log.info("Snd-sms thread service started for list size {}", dataUploadList.size());
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        log.info("Current available processors {}", availableProcessors);
+
+        int listSize = dataUploadList.size();
+        int batchSize = 500; // Adjust as needed based on memory or processing needs
+        int numBatches = (int) Math.ceil((double) listSize / batchSize);  // Total number of batches
+        int numThreads = Math.min(numBatches, availableProcessors * 2);
+
+        log.info("No of threads set in poll size {}", numThreads);
+        // Create a fixed thread pool
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        int start = 0;
+
+        for (int i = 0; i < numThreads; i++) {
+
+            int end = Math.min(start + batchSize, dataUploadList.size());
+            // Sublist for each thread to process
+            List<DataUpload> sublist = dataUploadList.subList(start, end);
+            log.info("Thread {} execution initiated and processing list index from {} to {}", numThreads, start, end);
+            // Submit a task to process this sublist
+            executorService.submit(() -> {
+                for (DataUpload element : sublist) {
+                    try {
+
+                        smsUtility.sendTextMsgToUser(element);
+                        bulkSmsRepo.updateBulkSmsTimestampByDataUploadId(element.getId());
+                        Map<Object, Object> map = new HashMap<>();
+                        map.put("loanNumber", element.getLoanNumber());
+                        map.put("mobileNumber", element.getMobileNumber());
+                        map.put("timestamp", timestamp);
+                        map.put("smsFlag", "success");
+                        map.put("category",category);
+                        content.add(map);
+//                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+
+                }
+                log.info("Thread {} completed successfully sms sent successfully {}  ", numThreads, sublist.size());
+
+            });
+
+
+            start = end;
+
+        }
+        // Shut down the executor and wait for tasks to complete
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.HOURS);
+        System.out.println("All tasks completed.");
+
+
     }
 
     @Override
-    public SmsResponse listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception {
+    public ResponseEntity<?> listOfSendSmsToUser(String smsCategory, int pageNo) throws Exception {
         List<Object> userDetails = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
-        long detailOfCount=0;
-        int pageSize=100;
+        long detailOfCount = 0;
+        int pageSize = 100;
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
-            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+            Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
             List<DataUpload> userDetailsList;
             if (smsCategory == null || smsCategory.isEmpty()) {
 
@@ -271,20 +328,23 @@ public class ServiceImpl implements Service {
                 detailOfCount = dataUploadRepo.findCountWithSmsCategory(smsCategory);
             }
 
-            if (!userDetailsList.isEmpty()) {
+            if (!userDetailsList.isEmpty() && detailOfCount > 0) {
                 for (DataUpload userDetail : userDetailsList) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "success");
+                    map.put("category",userDetail.getCertificateCategory());
                     userDetails.add(map);
 
                 }
+                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", userDetails));
+
+            } else {
+                commonResponse.setMsg("Data not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
-            double totalPages = Math.ceil((double) detailOfCount / pageSize);
-            boolean offsetLogic = pageNo < totalPages;
-            return new SmsResponse(detailOfCount,offsetLogic,"success",userDetails);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -292,75 +352,100 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ResponseEntity<?> getDashboardData() throws Exception {
+    public ResponseEntity<?> getDashboardData(int pageNo) throws Exception {
 
         CommonResponse commonResponse = new CommonResponse();
         DashboardResponse dashboardResponse = new DashboardResponse();
         List<DashboardDataList> lists = new ArrayList<>();
+        Map<String, Long> smsCountByCategory = new HashMap<>();
+        Map<String, Long> downloadCountByCategory = new HashMap<>();
+        int pageSize = 100;
 
-        Long downloadCount = documentDetailsRepo.getDownloadCount();
-        Long smsCount = dataUploadRepo.getSmsCount();
-        List<DataUpload> dataUpload = dataUploadRepo.findByType();
-
-        if (dataUpload.isEmpty()) {
-            commonResponse.setMsg("Data not found.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
-        }
-
-        for (DataUpload data : dataUpload) {
-            DashboardDataList dashboardData = new DashboardDataList();
-            dashboardData.setCategory(data.getCertificateCategory());
-            dashboardData.setPhoneNo(data.getMobileNumber());
-            dashboardData.setSmsTimeStamp(data.getBulkSms().getSmsTimeStamp());
-            dashboardData.setLoanNo(data.getLoanNumber());
-            Optional<DocumentDetails> documentDetails = documentDetailsRepo.findDataByLoanNo(data.getLoanNumber());
-            if (documentDetails.isPresent() && (documentDetails.get().getDownloadCount() > 0)) {
-                dashboardData.setDownloadCount(documentDetails.get().getDownloadCount());
-                dashboardData.setLastDownload(documentDetails.get().getLastDownload());
-                lists.add(dashboardData);
-
-            } else {
-                System.out.println("No DocumentDetails found for loan number: " + data.getLoanNumber());
-            }
-
-        }
-
-        dashboardResponse.setDataLists(lists);
-        dashboardResponse.setSmsCount(smsCount);
-        dashboardResponse.setDownloadCount(downloadCount);
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+        List<Object[]> smsCountByCategoryData = dataUploadRepo.countSmsByCategory();
+        List<Object[]> downloadCountByCategoryData = documentDetailsRepo.countDownloadByCategory();
+        List<DashboardDataList> dataUpload = dataUploadRepo.findByType(pageable);
+        double totalCount = dataUploadRepo.listTotalDownloadCount();
+        setDownloadAndSmsCount(smsCountByCategoryData, smsCountByCategory);
+        setDownloadAndSmsCount(downloadCountByCategoryData, downloadCountByCategory);
+        dashboardResponse.setDataLists(dataUpload);
+        dashboardResponse.setTotalCount((long) totalCount);
+        dashboardResponse.setNextPage(pageNo < totalCount / pageSize);
+        dashboardResponse.setSmsCountByCategory(smsCountByCategory);
+        dashboardResponse.setDownloadCountByCategory(downloadCountByCategory);
         commonResponse.setMsg("Data found successfully.");
-
         return ResponseEntity.ok(dashboardResponse);
     }
 
-    public ResponseEntity<?> fetchPdfFileForDownloadBySmsLink(String loanNo) {
-        CommonResponse commonResponse = new CommonResponse();
-        System.out.println(loanNo);
-        DocumentDetails documentReader = documentDetailsRepo.findByLoanNo(loanNo);
+    private void setDownloadAndSmsCount(List<Object[]> countData, Map<String, Long> countMap) {
+        for (Object[] row : countData) {
+            countMap.put((String) row[1], (Long) row[0]);
+        }
+    }
+
+    public ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo, String category) throws Exception {
+
+        System.out.println("decode loan no"+ loanNo);
+        DocumentDetails documentReader = documentDetailsRepo.findByLoanNoAndCategory(loanNo, category);
 
         if (documentReader == null) {
-            commonResponse.setMsg("File not found or invalid loanNo");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+            System.out.println("File not found or invalid loanNo");
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        Path filePath = Paths.get(projectSavePath, loanNo + ".pdf");
-        Resource resource = resourceLoader.getResource("file:" + filePath);
-        ResponseEntity<Resource> response = ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + loanNo + ".pdf\"").body(resource);
+        System.out.println("Current working directory: " + System.getProperty("user.dir"));
+        String fileName = loanNo + ".pdf";
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            documentDetailsRepo.updateDownloadCountBySmsLink(String.valueOf(filePath.getFileName()).replace(".pdf", ""), Timestamp.valueOf(LocalDateTime.now()));
+        if (category.contains("ADHOC")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathAdhoc,category);
+
+        } else if (category.contains("SOA")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathSoa,category);
+
+        } else if (category.contains("INTEREST_CERTIFICATE")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathInterestCertificate,category);
+
+
+        } else if (category.contains("Reminder_Payment")) {
+            return generatePdfDocument(loanNo, fileName, projectSavePathPaymentReminder,category);
+
+        } else if (category.contains("SOA_QUARTERLY")) {
+            return generatePdfDocument(loanNo,fileName, projectSavePathSoaQuarterly,category);
+
         }
-        return response;
+
+        return null;
+    }
+
+    private ResponseEntity<byte[]> generatePdfDocument(String loanNo, String fileName, String projectSavePathPaymentReminder,String category) throws IOException {
+        Path filePath = Paths.get(projectSavePathPaymentReminder);
+        File pdfFile = new File(filePath + fileName);
+        System.out.println("filepath" + filePath);
+        if (pdfFile.exists()) {
+            System.out.println("File not found");
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        }
+        byte[] pdfBytes;
+        InputStream inputStream = new FileInputStream(filePath + "/" + fileName);
+        pdfBytes = inputStream.readAllBytes();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", fileName);
+        documentDetailsRepo.updateDownloadCountBySmsLink(loanNo, Timestamp.valueOf(LocalDateTime.now()),category);
+
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 
     @Override
-    public SmsResponse listOfUnsendSms(String smsCategory, int pageNo) throws Exception{
+    public ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception {
         List<Object> detailsOfUser = new ArrayList<>();
         LocalDateTime timeStamp = LocalDateTime.now();
-        long detailOfCount=0;
-        int pageSize=100;
+        long detailOfCount = 0;
+        int pageSize = 100;
+        CommonResponse commonResponse = new CommonResponse();
 
         try {
-            Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+            Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
             List<DataUpload> unsendSmsDetails;
             if (smsCategory == null || smsCategory.isEmpty()) {
 
@@ -372,19 +457,22 @@ public class ServiceImpl implements Service {
                 detailOfCount = dataUploadRepo.findUnsendSmsCountByCategory(smsCategory);
             }
 
-            if (!unsendSmsDetails.isEmpty()) {
+            if (!unsendSmsDetails.isEmpty() && detailOfCount > 0) {
                 for (DataUpload userDetail : unsendSmsDetails) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("loanNumber", userDetail.getLoanNumber());
                     map.put("mobileNumber", userDetail.getMobileNumber());
                     map.put("timestamp", timeStamp);
                     map.put("smsFlag", "un-send");
+                    map.put("category", userDetail.getCertificateCategory());
                     detailsOfUser.add(map);
                 }
+                return ResponseEntity.status(HttpStatus.OK).body(new SmsResponse(detailOfCount, pageNo <= (detailOfCount / pageSize), "success", detailsOfUser));
+
+            } else {
+                commonResponse.setMsg("Data not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
             }
-            double totalPages = Math.ceil((double) detailOfCount / pageSize);
-            boolean offsetLogic = pageNo < totalPages;
-            return new SmsResponse(detailOfCount,offsetLogic,"success",detailsOfUser);
 
         } catch (Exception e) {
             e.printStackTrace();
