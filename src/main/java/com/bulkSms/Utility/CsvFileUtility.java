@@ -40,11 +40,6 @@ public class CsvFileUtility {
                 String loanNumber = record.get(0);
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
-
-                if ("#N/A".equalsIgnoreCase(loanNumber)) {
-                    log.info("line no is empty.");
-                    continue;
-                }
                 // Combine loanNumber and certificateCategory to create a unique key
                 String uniqueKey = loanNumber + "|" + certificateCategory;
 
@@ -79,7 +74,7 @@ public class CsvFileUtility {
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
-//                    log.info("Adding into list {}",uniqueKey);
+                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
 //                }
 
@@ -87,7 +82,7 @@ public class CsvFileUtility {
                 if (dataUploadList.size() == 5000) {  // Process every 100 records
 
                     dataUploadRepo.saveAll(dataUploadList);
-//                    log.info("Data save count {}",dataUploadList.size());
+                    log.info("Data save count {}",dataUploadList.size());
                     dataUploadList.clear();  // Clear the list after saving
                 }
             }
