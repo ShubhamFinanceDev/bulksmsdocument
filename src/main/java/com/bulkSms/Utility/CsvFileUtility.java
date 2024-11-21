@@ -79,7 +79,7 @@ public class CsvFileUtility {
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
-                    log.info("Adding into list {}",uniqueKey);
+//                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
 //                }
 
@@ -87,7 +87,7 @@ public class CsvFileUtility {
                 if (dataUploadList.size() == 5000) {  // Process every 100 records
 
                     dataUploadRepo.saveAll(dataUploadList);
-                    log.info("Data save count {}",dataUploadList.size());
+//                    log.info("Data save count {}",dataUploadList.size());
                     dataUploadList.clear();  // Clear the list after saving
                 }
             }
