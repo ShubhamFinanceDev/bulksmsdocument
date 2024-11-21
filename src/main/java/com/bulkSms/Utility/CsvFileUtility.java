@@ -37,17 +37,20 @@ public class CsvFileUtility {
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8")); CSVParser csvParser = new CSVParser(bReader, CSVFormat.DEFAULT.withDelimiter('|').withTrim())) {
 
             for (CSVRecord record : csvParser) {
-                log.info("initial batch size {}",dataUploadList.size());
                 String loanNumber = record.get(0);
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
 
+                if (loanNumber.isEmpty() || loanNumber==null) {
+                    log.info("line no {} is empty.",record.getRecordNumber());
+                    continue;
+                }
                 // Combine loanNumber and certificateCategory to create a unique key
                 String uniqueKey = loanNumber + "|" + certificateCategory;
 
                 if (uniqueRecords.contains(uniqueKey)) {
                     // Skip this record if it's already in the Set
-                    System.out.println("Duplicate found for LoanNumber: " + loanNumber + ", CertificateCategory: " + certificateCategory);
+                    log.info("Duplicate found for LoanNumber: " + loanNumber + ", CertificateCategory: " + certificateCategory);
                     continue;
                 } else {
                     // Add the unique key to the Set
