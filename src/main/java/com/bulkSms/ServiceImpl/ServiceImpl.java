@@ -252,7 +252,7 @@ public class ServiceImpl implements Service {
         CommonResponse commonResponse = new CommonResponse();
 
         try {
-            int requestBatchSize = 5000;
+            int requestBatchSize = 25000;
             int batchCount = 0;
 
             while (true) {
