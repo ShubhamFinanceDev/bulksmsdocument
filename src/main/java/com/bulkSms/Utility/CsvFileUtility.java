@@ -37,6 +37,7 @@ public class CsvFileUtility {
         try (BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8")); CSVParser csvParser = new CSVParser(bReader, CSVFormat.DEFAULT.withDelimiter('|').withTrim())) {
 
             for (CSVRecord record : csvParser) {
+                log.info("initial batch size {}",dataUploadList.size());
                 String loanNumber = record.get(0);
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
@@ -75,6 +76,7 @@ public class CsvFileUtility {
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
+                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
 //                }
 
