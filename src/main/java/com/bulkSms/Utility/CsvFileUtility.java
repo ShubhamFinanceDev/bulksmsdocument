@@ -53,17 +53,17 @@ public class CsvFileUtility {
                 }
 
                 // Check for existing data in the database
-                Optional<DataUpload> existingDataUpload = dataUploadRepo.findByloanNumber(loanNumber, certificateCategory);
-
-                if (existingDataUpload.isPresent()) {
-                    DataUpload dataUpload = existingDataUpload.get();
-                    dataUpload.setMobileNumber(mobileNo);
-
-                    dataUpload.setUpload_date(java.sql.Date.valueOf(java.time.LocalDate.now()));
-
-                    dataUpload.setSmsFlag("N");
-                    dataUploadRepo.save(dataUpload);
-                } else {
+//                Optional<DataUpload> existingDataUpload = dataUploadRepo.findByloanNumber(loanNumber, certificateCategory);
+//
+//                if (existingDataUpload.isPresent()) {
+//                    DataUpload dataUpload = existingDataUpload.get();
+//                    dataUpload.setMobileNumber(mobileNo);
+//
+//                    dataUpload.setUpload_date(java.sql.Date.valueOf(java.time.LocalDate.now()));
+//
+//                    dataUpload.setSmsFlag("N");
+//                    dataUploadRepo.save(dataUpload);
+//                } else {
                     DataUpload dataUpload = new DataUpload();
                     BulkSms bulkSms = new BulkSms();
                     dataUpload.setLoanNumber(record.get(0));
@@ -76,7 +76,7 @@ public class CsvFileUtility {
                     dataUpload.setBulkSms(bulkSms);
 //                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
-                }
+//                }
 
                 // Optional: Save records in batches
                 if (dataUploadList.size() == 5000) {  // Process every 100 records
