@@ -7,6 +7,8 @@ import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.EncodingUtils;
+import jakarta.validation.Valid;
+import org.owasp.encoder.Encode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,14 +43,19 @@ public class Login {
 
     Logger logger = LoggerFactory.getLogger(Login.class);
 
+    private String sanitizeInput(String input) {
+        return Encode.forHtml(input);
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody JwtRequest request) {
+    public ResponseEntity<JwtResponse> login(@RequestBody @Valid JwtRequest request) {
 
+        String sanitizedEmail = sanitizeInput(request.getEmailId());
+        String sanitizedPassword = sanitizeInput(request.getPassword());
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmailId());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(sanitizedEmail);
 
-        this.doAuthenticate(request.getEmailId(), request.getPassword());
+        this.doAuthenticate(sanitizedEmail, sanitizedPassword);
 
         String token = this.helper.generateToken(userDetails);
 
@@ -59,44 +66,33 @@ public class Login {
     }
 
     private void doAuthenticate(String email, String password) {
-
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, password);
         try {
             manager.authenticate(authentication);
-
-
         } catch (BadCredentialsException e) {
-            throw new BadCredentialsException(" Invalid Username or Password  !!");
+            throw new BadCredentialsException("Invalid Username or Password!");
         }
     }
 
-//    @GetMapping("/download-pdf/{category}/{loanNo}")
-//    public ResponseEntity<?> downloadPdfFile(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo) {
-//        CommonResponse commonResponse = new CommonResponse();
-//        String loanNoDecoded = encodingUtils.decode(loanNo);
-//        try {
-//            return service.fetchPdfFileForDownload(loanNoDecoded,category);
-//        }catch (Exception e){
-//            commonResponse.setMsg("Exception :" +e.getMessage());
-//            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
-
     @GetMapping("/dashboard-view")
-    public ResponseEntity<?> fetchDataForDashboard(@RequestParam(name = "pageNo",defaultValue = "1") int pageNo) throws Exception {
+    public ResponseEntity<?> fetchDataForDashboard(@RequestParam(name = "pageNo", defaultValue = "1") int pageNo) throws Exception {
         try {
+            logger.info("Fetching dashboard data for page {}", pageNo);
             return service.getDashboardData(pageNo);
-        }catch (Exception e){
+        } catch (Exception e) {
+            logger.error("Error fetching dashboard data: {}", e.getMessage());
             throw new Exception(e.getMessage());
         }
     }
+
     @GetMapping("/download-kit/{category}/{loanNo}")
-    public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
+    public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo) {
         try {
-            logger.info("request for pdf download encrypted {}",loanNo);
-            return service.fetchPdfFileForDownloadBySmsLink(encodingUtils.decode(loanNo),category);
-        }catch (Exception e){
-            System.out.println("Exception found :"+e.getMessage());
+            String decodedLoanNo = encodingUtils.decode(sanitizeInput(loanNo));
+            logger.info("Request for PDF download, category: {}, loanNo: {}", category, decodedLoanNo);
+            return service.fetchPdfFileForDownloadBySmsLink(decodedLoanNo, category);
+        } catch (Exception e) {
+            logger.error("Exception while downloading PDF: {}", e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

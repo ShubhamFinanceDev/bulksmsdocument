@@ -2,7 +2,9 @@ package com.bulkSms.Configration;
 
 import com.bulkSms.Authentication.AuthEntryPoint;
 import com.bulkSms.JwtAuthentication.JwtAuthenticationFilter;
+import com.bulkSms.Utility.StaticCSPFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -56,5 +58,11 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration builder) throws Exception {
         return builder.getAuthenticationManager();
     }
-
+    @Bean
+    public FilterRegistrationBean<StaticCSPFilter> globalCSPFilter() {
+        FilterRegistrationBean<StaticCSPFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new StaticCSPFilter());
+        registrationBean.addUrlPatterns("/*");
+        return registrationBean;
+    }
 }
