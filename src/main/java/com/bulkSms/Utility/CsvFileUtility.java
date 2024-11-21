@@ -41,10 +41,10 @@ public class CsvFileUtility {
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
 
-                if (loanNumber.isEmpty() || loanNumber==null) {
-                    log.info("line no {} is empty.",record.getRecordNumber());
-                    continue;
-                }
+//                if (loanNumber.isEmpty() || loanNumber==null) {
+//                    log.info("line no is empty.");
+//                    continue;
+//                }
                 // Combine loanNumber and certificateCategory to create a unique key
                 String uniqueKey = loanNumber + "|" + certificateCategory;
 
