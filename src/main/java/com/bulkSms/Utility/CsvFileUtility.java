@@ -41,7 +41,7 @@ public class CsvFileUtility {
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
 
-                if (loanNumber.isEmpty() || loanNumber==null) {
+                if ("#N/A".equalsIgnoreCase(loanNumber)) {
                     log.info("line no is empty.");
                     continue;
                 }
