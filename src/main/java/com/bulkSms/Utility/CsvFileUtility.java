@@ -4,6 +4,7 @@ import com.bulkSms.Entity.BulkSms;
 import com.bulkSms.Entity.DataUpload;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Repository.DataUploadRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -16,7 +17,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
-
+@Slf4j
 @Component
 public class CsvFileUtility {
     public static String TYPE = "text/csv";
@@ -39,13 +40,12 @@ public class CsvFileUtility {
                 String loanNumber = record.get(0);
                 String certificateCategory = record.get(2);
                 String mobileNo=record.get(1);
-
                 // Combine loanNumber and certificateCategory to create a unique key
                 String uniqueKey = loanNumber + "|" + certificateCategory;
 
                 if (uniqueRecords.contains(uniqueKey)) {
                     // Skip this record if it's already in the Set
-                    System.out.println("Duplicate found for LoanNumber: " + loanNumber + ", CertificateCategory: " + certificateCategory);
+                    log.info("Duplicate found for LoanNumber: " + loanNumber + ", CertificateCategory: " + certificateCategory);
                     continue;
                 } else {
                     // Add the unique key to the Set
@@ -74,13 +74,15 @@ public class CsvFileUtility {
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
-
+                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
                 }
 
                 // Optional: Save records in batches
-                if (dataUploadList.size() >= 5000) {  // Process every 100 records
+                if (dataUploadList.size() == 5000) {  // Process every 100 records
+
                     dataUploadRepo.saveAll(dataUploadList);
+                    log.info("Data save count {}",dataUploadList.size());
                     dataUploadList.clear();  // Clear the list after saving
                 }
             }
