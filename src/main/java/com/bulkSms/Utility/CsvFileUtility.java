@@ -74,7 +74,7 @@ public class CsvFileUtility {
                     bulkSms.setSmsTimeStamp(null);
                     bulkSms.setDataUpload(dataUpload);
                     dataUpload.setBulkSms(bulkSms);
-                    log.info("Adding into list {}",uniqueKey);
+//                    log.info("Adding into list {}",uniqueKey);
                     dataUploadList.add(dataUpload);
                 }
 
