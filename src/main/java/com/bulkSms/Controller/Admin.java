@@ -3,6 +3,7 @@ package com.bulkSms.Controller;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.bulkSms.Model.CommonResponse;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.owasp.encoder.Encode;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -25,6 +27,10 @@ public class Admin {
     @Autowired
     private Service service;
 
+    // Helper function for sanitizing user input
+    private String sanitizeInput(String input) {
+        return Encode.forHtml(input); // OWASP Encoder to prevent XSS
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegistrationDetails registerUserDetails) throws Exception {
@@ -46,7 +52,7 @@ public class Admin {
     }
 
     @PostMapping("/csvUpload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(@RequestParam("file") @NotNull MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();
         try {
             log.info("file upload job invoked");
@@ -59,7 +65,11 @@ public class Admin {
     }
 
     @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") String pdfUrl ,@RequestParam(name="category") String category) throws IOException {
+    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") @NotNull String pdfUrl ,
+                                                    @RequestParam(name="category") @NotNull String category) throws IOException {
+        // Sanitize user input to prevent XSS in logs or downstream processes
+        pdfUrl = sanitizeInput(pdfUrl);
+        category = sanitizeInput(category);
         return service.fetchPdf(pdfUrl,category);
     }
 
@@ -67,7 +77,11 @@ public class Admin {
     public ResponseEntity<?> sendSms(@RequestParam(required = false) String smsCategory,@RequestParam String type,@RequestParam(defaultValue = "1") int pageNo) throws Exception
     {
         try {
-
+            // Sanitize inputs
+            type = sanitizeInput(type);
+            if (smsCategory != null) {
+                smsCategory = sanitizeInput(smsCategory);
+            }
             switch (type) {
                 case "new" :
                     log.info("Sms process invoked fro category {}", smsCategory);
@@ -88,4 +102,14 @@ public class Admin {
         }
     }
 
+    @GetMapping("/dashboard-view")
+    public ResponseEntity<?> fetchDataForDashboard(@RequestParam(name = "pageNo",defaultValue = "1") int pageNo) throws Exception {
+        try {
+            log.info("Fetching dashboard data for page {}", pageNo);
+            return service.getDashboardData(pageNo);
+        }catch (Exception e){
+            log.error("Error fetching dashboard data: {}", e.getMessage());
+            throw new Exception(e.getMessage());
+        }
+    }
 }

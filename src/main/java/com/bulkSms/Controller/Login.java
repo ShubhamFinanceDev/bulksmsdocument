@@ -7,6 +7,8 @@ import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.EncodingUtils;
+import jakarta.validation.Valid;
+import org.owasp.encoder.Encode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,14 +43,19 @@ public class Login {
 
     Logger logger = LoggerFactory.getLogger(Login.class);
 
+    private String sanitizeInput(String input) {
+        return Encode.forHtml(input);
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody JwtRequest request) {
+    public ResponseEntity<JwtResponse> login(@RequestBody @Valid JwtRequest request) {
 
+        String sanitizedEmail = sanitizeInput(request.getEmailId());
+        String sanitizedPassword = sanitizeInput(request.getPassword());
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmailId());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(sanitizedEmail);
 
-        this.doAuthenticate(request.getEmailId(), request.getPassword());
+        this.doAuthenticate(sanitizedEmail, sanitizedPassword);
 
         String token = this.helper.generateToken(userDetails);
 
@@ -82,19 +89,13 @@ public class Login {
 //        }
 //    }
 
-    @GetMapping("/dashboard-view")
-    public ResponseEntity<?> fetchDataForDashboard(@RequestParam(name = "pageNo",defaultValue = "1") int pageNo) throws Exception {
-        try {
-            return service.getDashboardData(pageNo);
-        }catch (Exception e){
-            throw new Exception(e.getMessage());
-        }
-    }
+
     @GetMapping("/download-kit/{category}/{loanNo}")
     public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
         try {
-            logger.info("request for pdf download encrypted {}",loanNo);
-            return service.fetchPdfFileForDownloadBySmsLink(loanNo,category);
+            String decodedLoanNo = encodingUtils.decode(sanitizeInput(loanNo));
+            logger.info("request for pdf download encrypted {}",decodedLoanNo);
+            return service.fetchPdfFileForDownloadBySmsLink(decodedLoanNo, category);
         }catch (Exception e){
             System.out.println("Exception found :"+e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
