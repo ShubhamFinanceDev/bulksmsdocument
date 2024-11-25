@@ -93,7 +93,7 @@ public class Login {
     @GetMapping("/download-kit/{category}/{loanNo}")
     public ResponseEntity<byte[]> downloadPdfFileBySmsLink(@PathVariable("category") String category, @PathVariable("loanNo") String loanNo){
         try {
-            String decodedLoanNo = encodingUtils.decode(sanitizeInput(loanNo));
+            String decodedLoanNo = encodingUtils.decode(loanNo);
             logger.info("request for pdf download encrypted {}",decodedLoanNo);
             return service.fetchPdfFileForDownloadBySmsLink(decodedLoanNo, category);
         }catch (Exception e){

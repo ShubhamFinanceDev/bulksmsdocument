@@ -78,9 +78,9 @@ public class Admin {
     {
         try {
             // Sanitize inputs
-//            type = sanitizeInput(type);
+            type = sanitizeInput(type);
             if (smsCategory != null) {
-//                smsCategory = sanitizeInput(smsCategory);
+                smsCategory = sanitizeInput(smsCategory);
             }
             switch (type) {
                 case "new" :
