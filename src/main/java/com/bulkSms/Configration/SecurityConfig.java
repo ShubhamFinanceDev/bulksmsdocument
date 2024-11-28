@@ -35,7 +35,7 @@ public class SecurityConfig {
 
         http.csrf(csrf -> csrf.disable())
                 .authorizeRequests().
-                requestMatchers("/admin/**").hasRole("ADMIN").requestMatchers("/user/**").hasAnyRole("USER","ADMIN")
+                requestMatchers("/admin/**").hasRole("ADMIN").requestMatchers("/user/**").hasAnyRole("USER","ADMIN").requestMatchers("/feedbackManagement/**").permitAll()
                 .requestMatchers("/sms-service/**","/actuator/health").permitAll()
                 .anyRequest()
                 .authenticated()
@@ -59,11 +59,12 @@ public class SecurityConfig {
         return builder.getAuthenticationManager();
     }
 
-    @Bean
-    public FilterRegistrationBean<StaticCSPFilter> globalCSPFilter() {
-        FilterRegistrationBean<StaticCSPFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new StaticCSPFilter());
-        registrationBean.addUrlPatterns("/*");
-        return registrationBean;
-    }
+//    @Bean
+//    public FilterRegistrationBean<StaticCSPFilter> globalCSPFilter() {
+//        FilterRegistrationBean<StaticCSPFilter> registrationBean = new FilterRegistrationBean<>();
+//        registrationBean.setFilter(new StaticCSPFilter());
+//        registrationBean.addUrlPatterns("/*");
+//        return registrationBean;
+//    }
+
 }

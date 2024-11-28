@@ -1,5 +1,7 @@
 package com.bulkSms.Service;
 
+import com.bulkSms.Entity.FeedbackRecord;
+import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Model.SmsResponse;
@@ -8,6 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface Service {
@@ -28,4 +32,10 @@ public interface Service {
     ResponseEntity<byte[]> fetchPdfFileForDownloadBySmsLink(String loanNo,String category) throws Exception;
 
     ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
+
+    FeedbackRecord getFeedbackRecord(String formId, String contactNo);
+
+    void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback);
+
+    InputStream generateExcelFile(LocalDateTime startDate, LocalDateTime endDate);
 }

@@ -34,6 +34,8 @@ public class SmsUtility {
     private String smsSender;
     @Value("${kit.url}")
     private String kitBaseurl;
+    @Value("${submit.feedback.url}")
+    private String submitFeedbackUrl;
 
     int year = Year.now().getValue();
 
@@ -45,6 +47,7 @@ public class SmsUtility {
             "Regards\n" +
             "Shubham Housing Development Finance Company Ltd\n" +
             "Link: ";
+    private String feedbackMessage = "Dear+Customer,+thank+you+for+being+our+valuable+customer.+Here,+we+are+conducting+a+customer+satisfaction+survey,+and+your+response+would+be+appreciated.+Please+click+the+link+to+fill+your+feedback+";
 
 
     @Async
@@ -91,6 +94,9 @@ public class SmsUtility {
         } else if (smsSendDetails.getCertificateCategory().equals("SOA_QUARTERLY")) {
             smsBody=  soaQuarterly + kitBaseurl + key+"@"+smsSendDetails.getFileSequenceNo();
 
+        } else if (smsSendDetails.getCertificateCategory().equals("feedback")) {
+            smsBody = feedbackMessage + submitFeedbackUrl + "/" + smsSendDetails.getFileSequenceNo() + "/" + smsSendDetails.getMobileNumber();
+            smsBody += "\nWe+will+use+your+feedback+to+further+improve+our+service.%0aThank+you.%0aShubham+Housing";
         }
         return smsBody;
     }

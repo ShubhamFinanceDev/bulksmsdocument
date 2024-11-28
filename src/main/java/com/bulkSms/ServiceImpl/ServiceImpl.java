@@ -13,6 +13,11 @@ import com.bulkSms.Utility.EncodingUtils;
 import com.bulkSms.Utility.SmsUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
@@ -31,6 +36,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -62,6 +68,10 @@ public class ServiceImpl implements Service {
     private SmsUtility smsUtility;
     @Autowired
     private DataUploadRepo dataUploadRepo;
+    @Autowired
+    private UserFeedbackResponseRepo userFeedbackResponseRepo;
+    @Autowired
+    private FeedbackRepo feedbackRepo;
 
     @Value("${project.save.path.adhoc}")
     private String projectSavePathAdhoc;
@@ -518,6 +528,79 @@ public class ServiceImpl implements Service {
             e.printStackTrace();
             throw new Exception(e.getMessage());
         }
+    }
+
+
+    @Override
+    public void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback) {
+        feedback.setFormId(formId);
+        feedback.setContactNo(contactNo);
+        feedback.setFeedbackFlag("Submitted");
+
+        userFeedbackResponseRepo.save(feedback);
+
+        FeedbackRecord feedbackRecord = feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
+        if (feedbackRecord != null) {
+            feedbackRecord.setFeedbackSubmitFlag("Y");
+            feedbackRepo.save(feedbackRecord);
+        } else {
+            throw new RuntimeException("Feedback record not found.");
+        }
+    }
+
+    @Override
+    public InputStream generateExcelFile(LocalDateTime startDate, LocalDateTime endDate) {
+        List<UserFeedbackResponse> feedbackResponse;
+
+        if (startDate != null && endDate != null) {
+            feedbackResponse = userFeedbackResponseRepo.findByLatestDateBetween(startDate, endDate);
+        } else {
+            feedbackResponse = userFeedbackResponseRepo.findAll();
+        }
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Feedback Response");
+            int rowNum = 0;
+
+            // Header Row
+            Row headerRow = sheet.createRow(rowNum++);
+            String[] headers = {"ID", "Form ID", "Contact No", "Customer Name" ,"Loan Account Number" , "How did you hear about Shubham?", "Was the entire loan process explained to you clearly?", "Did you find Shubham Employees trustworthy & informative?" , "Did you face any difficulties during the loan process?" , "Would you recommend Shubham to family and friends?" , "How satisfied are you with your experience with Shubham?", "Comment" , "Feedback Flag","latestDate"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            // Data Rows
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            for (UserFeedbackResponse record : feedbackResponse) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(record.getId());
+                row.createCell(1).setCellValue(record.getFormId());
+                row.createCell(2).setCellValue(record.getContactNo());
+                row.createCell(3).setCellValue(record.getCustomerName());
+                row.createCell(4).setCellValue(record.getLoanAccountNo());
+                row.createCell(5).setCellValue(record.getHowDidYouHear());
+                row.createCell(6).setCellValue(record.getLoanProcessClear());
+                row.createCell(7).setCellValue(record.getEmployeesTrustworthy());
+                row.createCell(8).setCellValue(record.getFacedDifficulties());
+                row.createCell(9).setCellValue(record.getRecommendShubham());
+                row.createCell(10).setCellValue(record.getSatisfactionLevel());
+                row.createCell(11).setCellValue(record.getComment());
+                row.createCell(12).setCellValue(record.getFeedbackFlag());
+                row.createCell(13).setCellValue(record.getLatestDate().format(formatter));
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException("Error while generating Excel file", e);
+        }
+    }
+
+    @Override
+    public FeedbackRecord getFeedbackRecord(String formId, String contactNo) {
+        return feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
     }
 
 
