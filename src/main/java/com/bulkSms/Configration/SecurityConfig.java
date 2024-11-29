@@ -35,8 +35,8 @@ public class SecurityConfig {
 
         http.csrf(csrf -> csrf.disable())
                 .authorizeRequests().
-                requestMatchers("/admin/**").hasRole("ADMIN").requestMatchers("/feedbackManagement/**").hasRole("USER")
-                .requestMatchers("/sms-service/**","/feedback-view-request/**","/actuator/health").permitAll()
+                requestMatchers("/admin/**").hasRole("ADMIN").requestMatchers("/").hasRole("USER")
+                .requestMatchers("/sms-service/**","/feedback-view-request/**","/feedbackManagement/generate-feedback-excel","/actuator/health").permitAll()
                 .anyRequest()
                 .authenticated()
                 .and().exceptionHandling(ex -> ex.authenticationEntryPoint(point))
