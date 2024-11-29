@@ -1,5 +1,7 @@
 package com.bulkSms.Controller;
 
+import com.bulkSms.Entity.FeedbackRecord;
+import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.JwtAuthentication.JwtHelper;
 import com.bulkSms.Model.CommonResponse;
 import com.bulkSms.Model.JwtRequest;
@@ -19,11 +21,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/sms-service")
@@ -49,7 +55,8 @@ public class Login {
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(@RequestBody @Valid JwtRequest request) {
-
+        final int[] userRole = new int[1];
+        List<String> roleList = new ArrayList<>();
         String sanitizedEmail = sanitizeInput(request.getEmailId());
         String sanitizedPassword = sanitizeInput(request.getPassword());
 
@@ -58,9 +65,19 @@ public class Login {
         this.doAuthenticate(sanitizedEmail, sanitizedPassword);
 
         String token = this.helper.generateToken(userDetails);
+        userDetails.getAuthorities().forEach(grantedAuthority -> {
+            String roleName = String.valueOf(grantedAuthority);
+            roleList.add(roleName);
+        });
+
+        if (roleList.contains("ROLE_ADMIN")) {
+            userRole[0] = 0;
+        } else if (roleList.contains("ROLE_USER")) {
+            userRole[0] = 1;
+        }
 
         JwtResponse response = JwtResponse.builder()
-                .token(token)
+                .token(token).role(userRole[0])
                 .emailId(userDetails.getUsername()).build();
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

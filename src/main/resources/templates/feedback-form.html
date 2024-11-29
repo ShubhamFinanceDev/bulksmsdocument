@@ -127,7 +127,7 @@
         Shubham Housing Survey Form
     </div>
     <div class="form-container">
-        <form th:action="@{/feedbackManagement/feedback-form/{formId}/{contactNo}(formId=${feedback.formId}, contactNo=${feedback.contactNo})}"
+        <form th:action="@{/feedback-view-request/feedback-form/{formId}/{contactNo}(formId=${feedback.formId}, contactNo=${feedback.contactNo})}"
               th:object="${feedback}"
               method="post">
 

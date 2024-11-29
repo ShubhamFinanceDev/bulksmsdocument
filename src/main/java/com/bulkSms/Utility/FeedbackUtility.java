@@ -103,7 +103,7 @@ public class FeedbackUtility {
 //                    }
 //                }
                 long formId = 745935;
-                String contactNo = "0001112223";
+                String contactNo = "8160041657";
                 String loanNo = "0L0005089723";
                 String customerName = "Bongali";
                 GetDataForSendSms data = new GetDataForSendSms();
@@ -111,7 +111,6 @@ public class FeedbackUtility {
                 data.setCertificateCategory("feedback");
                 data.setMobileNumber(contactNo);
                 data.setFileSequenceNo(formId);
-                smsUtility.sendTextMsgToUser(data);
                 FeedbackRecord feedbackRecord = new FeedbackRecord();
                 feedbackRecord.setFormId(formId);
                 feedbackRecord.setContactNo(contactNo);
@@ -120,7 +119,7 @@ public class FeedbackUtility {
                 feedbackRecord.setLoanNo(loanNo);
                 feedbackRecord.setCustomerName(customerName);
                 feedbackRepo.save(feedbackRecord);
-
+                smsUtility.sendTextMsgToUser(data);
                 log.info("Data saved to database successfully.");
                 return feedbackResponse;
             } else {
