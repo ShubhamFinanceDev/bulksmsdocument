@@ -9,6 +9,7 @@ import com.bulkSms.Model.JwtResponse;
 import com.bulkSms.Model.RegistrationDetails;
 import com.bulkSms.Service.Service;
 import com.bulkSms.Utility.EncodingUtils;
+import com.bulkSms.Utility.FeedbackUtility;
 import jakarta.validation.Valid;
 import org.owasp.encoder.Encode;
 import org.slf4j.Logger;
@@ -46,6 +47,8 @@ public class Login {
 
     @Autowired
     private JwtHelper helper;
+    @Autowired
+    private FeedbackUtility feedbackUtility;
 
     Logger logger = LoggerFactory.getLogger(Login.class);
 
@@ -118,5 +121,14 @@ public class Login {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/send-feedback-sms")
+
+      public  String sendSms(@RequestParam String mobileNumber,@RequestParam long formId)
+    {
+        feedbackUtility.getFeedBack(mobileNumber,formId);
+        return "success";
+    }
+
 
 }

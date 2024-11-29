@@ -65,7 +65,7 @@ public class FeedbackUtility {
 
 
 //        @Scheduled(cron = "0 * * * * *")
-    public FeedbackResponse getFeedBack() {
+    public FeedbackResponse getFeedBack(String mobileNo,Long formId) {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
 
@@ -102,9 +102,9 @@ public class FeedbackUtility {
 //                        feedbackRepo.save(feedbackRecord);
 //                    }
 //                }
-                long formId = 745935;
-                String contactNo = "8160041657";
-                String loanNo = "0L0005089723";
+//                long formId = 745935;
+                String contactNo = mobileNo;
+                String loanNo = "APPLl000123";
                 String customerName = "Bongali";
                 GetDataForSendSms data = new GetDataForSendSms();
                 data.setLoanNumber(loanNo);
