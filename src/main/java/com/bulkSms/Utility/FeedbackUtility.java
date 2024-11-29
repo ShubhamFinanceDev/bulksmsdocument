@@ -105,7 +105,7 @@ public class FeedbackUtility {
 //                long formId = 745935;
                 String contactNo = mobileNo;
                 String loanNo = "APPLl000123";
-                String customerName = "Bongali";
+                String customerName = "Nainish SIngh";
                 GetDataForSendSms data = new GetDataForSendSms();
                 data.setLoanNumber(loanNo);
                 data.setCertificateCategory("feedback");
