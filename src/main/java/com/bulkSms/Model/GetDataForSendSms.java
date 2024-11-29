@@ -16,4 +16,6 @@ public class GetDataForSendSms {
             this.certificateCategory = certificateCategory;
             this.fileSequenceNo=fileSequenceNo;
         }
+
+        public GetDataForSendSms() {}
     }

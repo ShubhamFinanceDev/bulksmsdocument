@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Feedback Form</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&subset=latin,cyrillic-ext" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f49636;
+            color: #191516;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background-color: #ede2c3;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #191516;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #191516;
+        }
+        label[for="howDidYouHear"] {
+            margin-top: 20px; /* Adjust the value to control the spacing */
+        }
+        label[for="loanAccountNo"] {
+            margin-top: 20px;
+        }
+
+
+        /* Style the radio buttons and labels */
+        .rating-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .rating-container input[type="radio"] {
+            margin-right: 10px; /* Space between radio and text */
+        }
+
+        .rating-container label {
+            font-size: 16px;
+            margin-right: 20px; /* Space between 'Yes' and 'No' */
+            cursor: pointer;
+        }
+
+        .rating-container input[type="radio"]:checked + label span {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .rating-container input[type="radio"]:hover + label span {
+            background-color: #0056b3;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: white;
+        }
+
+        button {
+            padding: 12px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Styling for the personal details section */
+        .personal-details {
+            font-size: 20px;
+            font-weight: bold;
+            color: #191516;
+            margin-bottom: 20px;
+        }
+
+        .personal-details input[type="text"] {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            font-size: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="overlay"></div>
+<div class="container">
+    <div class="header">
+        Shubham Housing Survey Form
+    </div>
+    <div class="form-container">
+        <form th:action="@{/feedbackManagement/feedback-form/{formId}/{contactNo}(formId=${feedback.formId}, contactNo=${feedback.contactNo})}"
+              th:object="${feedback}"
+              method="post">
+
+            <!-- Personal Details Section -->
+            <div class="personal-details">Personal Details</div>
+
+            <label for="customerName">Customer Name</label>
+            <input type="text"
+                   th:field="*{customerName}"
+                   id="customerName"
+                   placeholder="Enter Your Name"
+                   required />
+
+            <label for="loanAccountNo">Loan Account Number</label>
+            <input type="text"
+                   th:field="*{loanAccountNo}"
+                   id="loanAccountNo"
+                   placeholder="Enter Your Loan Account Number"
+                   required />
+
+            <!-- How did you hear about Shubham? -->
+            <label for="howDidYouHear">How did you hear about Shubham?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{howDidYouHear}" id="hearSocial" value="Social Media">
+                <label for="hearSocial">Social Media</label>
+
+                <input type="radio" th:field="*{howDidYouHear}" id="hearTV" value="TV/Radio">
+                <label for="hearTV">TV/Radio</label>
+
+                <input type="radio" th:field="*{howDidYouHear}" id="hearWordOfMouth" value="Word of Mouth">
+                <label for="hearWordOfMouth">Word of Mouth</label>
+
+                <input type="radio" th:field="*{howDidYouHear}" id="hearInternet" value="Internet Search">
+                <label for="hearInternet">Internet Search</label>
+
+                <input type="radio" th:field="*{howDidYouHear}" id="hearAdvertisement" value="Advertisement">
+                <label for="hearAdvertisement">Advertisement (Online/Print)</label>
+
+                <input type="radio" th:field="*{howDidYouHear}" id="hearOther" value="Other">
+                <label for="hearOther">Other (Please specify)</label>
+            </div>
+
+            <!-- Was the entire loan process explained clearly? -->
+            <label for="loanProcessClear">Was the entire loan process explained to you clearly?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{loanProcessClear}" id="processClearYes" value="Yes">
+                <label for="processClearYes">Yes</label>
+
+                <input type="radio" th:field="*{loanProcessClear}" id="processClearNo" value="No">
+                <label for="processClearNo">No</label>
+            </div>
+
+            <!-- Did you find Shubham Employees trustworthy & informative? -->
+            <label for="employeesTrustworthiness">Did you find Shubham Employees trustworthy & informative?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{employeesTrustworthy}" id="trustworthyVery" value="Very Trustworthy and Informative">
+                <label for="trustworthyVery">Very Trustworthy and Informative</label>
+
+                <input type="radio" th:field="*{employeesTrustworthy}" id="trustworthy" value="Trustworthy and Informative">
+                <label for="trustworthy">Trustworthy and Informative</label>
+
+                <input type="radio" th:field="*{employeesTrustworthy}" id="neutral" value="Neutral">
+                <label for="neutral">Neutral</label>
+
+                <input type="radio" th:field="*{employeesTrustworthy}" id="somewhatTrustworthy" value="Somewhat Trustworthy">
+                <label for="somewhatTrustworthy">Somewhat Trustworthy</label>
+
+                <input type="radio" th:field="*{employeesTrustworthy}" id="notTrustworthy" value="Not Trustworthy">
+                <label for="notTrustworthy">Not Trustworthy</label>
+            </div>
+
+
+            <!-- Did you face any difficulties during the loan process? -->
+            <label for="facedDifficulties">Did you face any difficulties during the loan process?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{facedDifficulties}" id="difficultiesYes" value="Yes">
+                <label for="difficultiesYes">Yes</label>
+
+                <input type="radio" th:field="*{facedDifficulties}" id="difficultiesNo" value="No">
+                <label for="difficultiesNo">No</label>
+            </div>
+
+            <!-- Would you recommend Shubham to family and friends? -->
+            <label for="recommendShubham">Would you recommend Shubham to family and friends?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{recommendShubham}" id="recommendYes" value="Yes">
+                <label for="recommendYes">Yes</label>
+
+                <input type="radio" th:field="*{recommendShubham}" id="recommendNo" value="No">
+                <label for="recommendNo">No</label>
+            </div>
+
+            <!-- How satisfied are you with your experience with Shubham till date? -->
+            <label for="satisfactionLevel">How satisfied are you with your experience with Shubham till date?</label>
+            <div class="rating-container">
+                <input type="radio" th:field="*{satisfactionLevel}" id="verySatisfied" value="Very Satisfied">
+                <label for="verySatisfied">Very Satisfied</label>
+
+                <input type="radio" th:field="*{satisfactionLevel}" id="satisfied" value="Satisfied">
+                <label for="satisfied">Satisfied</label>
+
+                <input type="radio" th:field="*{satisfactionLevel}" id="neutralSatisfaction" value="Neutral">
+                <label for="neutralSatisfaction">Neutral</label>
+
+                <input type="radio" th:field="*{satisfactionLevel}" id="dissatisfied" value="Dissatisfied">
+                <label for="dissatisfied">Dissatisfied</label>
+
+                <input type="radio" th:field="*{satisfactionLevel}" id="veryDissatisfied" value="Very Dissatisfied">
+                <label for="veryDissatisfied">Very Dissatisfied</label>
+            </div>
+
+            <!-- Comment Section -->
+            <label for="comment">Any additional comments or suggestions:</label>
+            <textarea th:field="*{comment}" id="comment" placeholder="Enter your comments here" rows="4"></textarea>
+
+            <button type="submit">Submit Feedback</button>
+        </form>
+        <p class="note">Your feedback helps us to improve our services!</p>
+    </div>
+</div>
+</body>
+</html>
