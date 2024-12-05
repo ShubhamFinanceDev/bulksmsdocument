@@ -2,11 +2,7 @@ package com.bulkSms.Controller;
 
 import com.bulkSms.Service.Service;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -15,7 +11,6 @@ import java.io.OutputStream;
 
 @RestController
 @RequestMapping("/feedbackManagement")
-@Slf4j
 public class FeedbackController {
 
     @Autowired
@@ -23,33 +18,24 @@ public class FeedbackController {
 
 
     @GetMapping("/generate-feedback-excel")
-    public ResponseEntity<?> generateFeedbackExcel(HttpServletResponse response) {
-        try {
-            // Generate the Excel file
-            InputStream excelFile = service.generateExcelFile();
+    public void generateFeedbackExcel(HttpServletResponse response) throws IOException {
 
-            // Set response headers
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition", "attachment; filename=feedback_response_Records.xlsx");
+        // Generate the Excel file
+        InputStream excelFile = service.generateExcelFile();
 
-            // Write the file to the response output stream
-            try (OutputStream out = response.getOutputStream()) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = excelFile.read(buffer)) != -1) {
-                    out.write(buffer, 0, bytesRead);
-                }
-                out.flush();
+        // Set response headers
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=feedback_response_Records.xlsx");
+
+        // Write the file to the response output stream
+        try (OutputStream out = response.getOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = excelFile.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
-
-            log.info("Successfully generated feedback excel file");
-            return ResponseEntity.ok("Excel file generated successfully.");
-        } catch (IOException e) {
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error generating the Excel file: " + e.getMessage());
+            out.flush();
         }
     }
-
 
 }
