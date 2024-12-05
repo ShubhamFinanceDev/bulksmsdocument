@@ -1,23 +1,16 @@
 package com.bulkSms.Controller;
 
-import com.bulkSms.Entity.FeedbackRecord;
-import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.Service.Service;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.io.OutputStream;
 
-@Controller
+@RestController
 @RequestMapping("/feedbackManagement")
 public class FeedbackController {
 
@@ -26,29 +19,24 @@ public class FeedbackController {
 
 
     @GetMapping("/generate-feedback-excel")
-    @ResponseBody
-    public ResponseEntity<byte[]> generateFeedbackExcel(
-            @RequestParam(value = "startDate", required = false) String startDateStr,
-            @RequestParam(value = "endDate", required = false) String endDateStr) throws IOException {
+    public void generateFeedbackExcel(HttpServletResponse response) throws IOException {
 
-        LocalDateTime startDate = null;
-        LocalDateTime endDate = null;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // Generate the Excel file
+        InputStream excelFile = service.generateExcelFile();
 
-        if (startDateStr != null && endDateStr != null) {
-            startDate = LocalDateTime.parse(startDateStr, formatter);
-            endDate = LocalDateTime.parse(endDateStr, formatter);
+        // Set response headers
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=feedback_response_Records.xlsx");
+
+        // Write the file to the response output stream
+        try (OutputStream out = response.getOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = excelFile.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush();
         }
-
-        InputStream excelFile = service.generateExcelFile(startDate, endDate);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=feedback_response_Records.xlsx");
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .headers(headers)
-                .body(excelFile.readAllBytes());
     }
 
 }

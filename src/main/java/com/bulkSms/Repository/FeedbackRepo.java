@@ -8,8 +8,8 @@ public interface FeedbackRepo extends JpaRepository<FeedbackRecord,Long>
 {
 
     @Query(value = "SELECT * FROM feedback_record f " +
-            "WHERE f.form_id = :formId AND f.contact_no = :contactNo " +
+            "WHERE f.form_id = :formId " +
             "ORDER BY f.date DESC   LIMIT 1",
             nativeQuery = true)
-    FeedbackRecord findByFormIdAndContactNo(String formId, String contactNo);
+    FeedbackRecord findByFormId(String formId);
 }

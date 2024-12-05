@@ -532,31 +532,22 @@ public class ServiceImpl implements Service {
 
 
     @Override
-    public void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback) {
+    public void submitFeedback(String formId, UserFeedbackResponse feedback) {
+        FeedbackRecord feedbackRecord = feedbackRepo.findByFormId(formId);
         feedback.setFormId(formId);
-        feedback.setContactNo(contactNo);
+        feedback.setContactNo(feedbackRecord.getContactNo());
         feedback.setFeedbackFlag("Submitted");
 
         userFeedbackResponseRepo.save(feedback);
 
-        FeedbackRecord feedbackRecord = feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
-        if (feedbackRecord != null) {
-            feedbackRecord.setFeedbackSubmitFlag("Y");
-            feedbackRepo.save(feedbackRecord);
-        } else {
-            throw new RuntimeException("Feedback record not found.");
-        }
+
+        feedbackRecord.setFeedbackSubmitFlag("Y");
+        feedbackRepo.save(feedbackRecord);
     }
 
     @Override
-    public InputStream generateExcelFile(LocalDateTime startDate, LocalDateTime endDate) {
-        List<UserFeedbackResponse> feedbackResponse;
-
-        if (startDate != null && endDate != null) {
-            feedbackResponse = userFeedbackResponseRepo.findByLatestDateBetween(startDate, endDate);
-        } else {
-            feedbackResponse = userFeedbackResponseRepo.findAll();
-        }
+    public InputStream generateExcelFile() {
+        List<UserFeedbackResponse> feedbackResponse = userFeedbackResponseRepo.findAll();
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Feedback Response");
@@ -599,8 +590,8 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public FeedbackRecord getFeedbackRecord(String formId, String contactNo) {
-        return feedbackRepo.findByFormIdAndContactNo(formId, contactNo);
+    public FeedbackRecord getFeedbackRecord(String formId) {
+        return feedbackRepo.findByFormId(formId);
     }
 
 
