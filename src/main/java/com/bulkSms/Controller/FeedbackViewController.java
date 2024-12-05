@@ -3,6 +3,7 @@ package com.bulkSms.Controller;
 import com.bulkSms.Entity.FeedbackRecord;
 import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.Service.Service;
+import com.bulkSms.Utility.EncodingUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,13 +17,18 @@ public class FeedbackViewController {
     @Autowired
     private Service service;
 
+    @Autowired
+    private EncodingUtils encodingUtils;
+
     @GetMapping("/survey/{formId}")
     public String showFeedbackForm(
             @PathVariable String formId,
             Model model) {
 
+        String formIdDecoded = encodingUtils.decode(formId);
+
         // Fetch the feedback record based on formId and contactNo
-        FeedbackRecord feedbackRecord = service.getFeedbackRecord(formId);
+        FeedbackRecord feedbackRecord = service.getFeedbackRecord(formIdDecoded);
 
         if (feedbackRecord == null) {
             model.addAttribute("message", "No feedback record found.");
@@ -39,7 +45,7 @@ public class FeedbackViewController {
 
         // Create a feedback response object
         UserFeedbackResponse feedback = new UserFeedbackResponse();
-        feedback.setFormId(formId);
+        feedback.setFormId(formIdDecoded);
 
         // Set the customer name and loan account number for autofill
         feedback.setCustomerName(feedbackRecord.getCustomerName());

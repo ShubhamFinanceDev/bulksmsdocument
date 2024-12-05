@@ -555,7 +555,7 @@ public class ServiceImpl implements Service {
 
             // Header Row
             Row headerRow = sheet.createRow(rowNum++);
-            String[] headers = {"ID", "Form ID", "Contact No", "Customer Name" ,"Loan Account Number" , "How did you hear about Shubham?", "Was the entire loan process explained to you clearly?", "Did you find Shubham Employees trustworthy & informative?" , "Did you face any difficulties during the loan process?" , "Would you recommend Shubham to family and friends?" , "How satisfied are you with your experience with Shubham?", "Comment" , "Feedback Flag","latestDate"};
+            String[] headers = {"ID", "Contact No", "Customer Name" ,"Loan Account Number" , "How did you hear about Shubham?", "Was the entire loan process explained to you clearly?", "Did you find Shubham Employees trustworthy & informative?" , "Did you face any difficulties during the loan process?" , "Would you recommend Shubham to family and friends?" , "How satisfied are you with your experience with Shubham?", "Comment" , "Feedback Flag","SubmittedDate"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -566,19 +566,18 @@ public class ServiceImpl implements Service {
             for (UserFeedbackResponse record : feedbackResponse) {
                 Row row = sheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(record.getId());
-                row.createCell(1).setCellValue(record.getFormId());
-                row.createCell(2).setCellValue(record.getContactNo());
-                row.createCell(3).setCellValue(record.getCustomerName());
-                row.createCell(4).setCellValue(record.getLoanAccountNo());
-                row.createCell(5).setCellValue(record.getHowDidYouHear());
-                row.createCell(6).setCellValue(record.getLoanProcessClear());
-                row.createCell(7).setCellValue(record.getEmployeesTrustworthy());
-                row.createCell(8).setCellValue(record.getFacedDifficulties());
-                row.createCell(9).setCellValue(record.getRecommendShubham());
-                row.createCell(10).setCellValue(record.getSatisfactionLevel());
-                row.createCell(11).setCellValue(record.getComment());
-                row.createCell(12).setCellValue(record.getFeedbackFlag());
-                row.createCell(13).setCellValue(record.getLatestDate().format(formatter));
+                row.createCell(1).setCellValue(record.getContactNo());
+                row.createCell(2).setCellValue(record.getCustomerName());
+                row.createCell(3).setCellValue(record.getLoanAccountNo());
+                row.createCell(4).setCellValue(record.getHowDidYouHear());
+                row.createCell(5).setCellValue(record.getLoanProcessClear());
+                row.createCell(6).setCellValue(record.getEmployeesTrustworthy());
+                row.createCell(7).setCellValue(record.getFacedDifficulties());
+                row.createCell(8).setCellValue(record.getRecommendShubham());
+                row.createCell(9).setCellValue(record.getSatisfactionLevel());
+                row.createCell(10).setCellValue(record.getComment());
+                row.createCell(11).setCellValue(record.getFeedbackFlag());
+                row.createCell(12).setCellValue(record.getLatestDate().format(formatter));
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
