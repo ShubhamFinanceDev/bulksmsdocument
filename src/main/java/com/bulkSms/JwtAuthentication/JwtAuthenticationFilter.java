@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //        logger.info(" Header :  {}", requestHeader);
         String username = null;
         String token = null;
-        if (request.getRequestURI().contains("/admin") || request.getRequestURI().contains("/sms-service")) {
+        if (request.getRequestURI().contains("/admin") || request.getRequestURI().contains("/sms-service") || request.getRequestURI().contains("/feedbackManagement")) {
             logger.info(" Invoked request :  {}", request.getRequestURI());
             logger.info(" Header :  {}", requestHeader);
             if (requestHeader != null && requestHeader.startsWith("Bearer")) {

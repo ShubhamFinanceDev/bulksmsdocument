@@ -33,9 +33,9 @@ public interface Service {
 
     ResponseEntity<?> listOfUnsendSms(String smsCategory, int pageNo) throws Exception;
 
-    FeedbackRecord getFeedbackRecord(String formId, String contactNo);
+    FeedbackRecord getFeedbackRecord(String formId);
 
-    void submitFeedback(String formId, String contactNo, UserFeedbackResponse feedback);
+    void submitFeedback(String formId, UserFeedbackResponse feedback);
 
-    InputStream generateExcelFile(LocalDateTime startDate, LocalDateTime endDate);
+    InputStream generateExcelFile();
 }
