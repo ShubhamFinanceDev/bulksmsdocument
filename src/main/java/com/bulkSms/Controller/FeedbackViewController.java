@@ -3,6 +3,7 @@ package com.bulkSms.Controller;
 import com.bulkSms.Entity.FeedbackRecord;
 import com.bulkSms.Entity.UserFeedbackResponse;
 import com.bulkSms.Service.Service;
+import com.bulkSms.Utility.EncodingUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,14 +17,18 @@ public class FeedbackViewController {
     @Autowired
     private Service service;
 
-    @GetMapping("/survey/{formId}/{contactNo}")
+    @Autowired
+    private EncodingUtils encodingUtils;
+
+    @GetMapping("/survey/{formId}")
     public String showFeedbackForm(
             @PathVariable String formId,
-            @PathVariable String contactNo,
             Model model) {
 
+        String formIdDecoded = encodingUtils.decode(formId);
+
         // Fetch the feedback record based on formId and contactNo
-        FeedbackRecord feedbackRecord = service.getFeedbackRecord(formId, contactNo);
+        FeedbackRecord feedbackRecord = service.getFeedbackRecord(formIdDecoded);
 
         if (feedbackRecord == null) {
             model.addAttribute("message", "No feedback record found.");
@@ -40,8 +45,7 @@ public class FeedbackViewController {
 
         // Create a feedback response object
         UserFeedbackResponse feedback = new UserFeedbackResponse();
-        feedback.setFormId(formId);
-        feedback.setContactNo(contactNo);
+        feedback.setFormId(formIdDecoded);
 
         // Set the customer name and loan account number for autofill
         feedback.setCustomerName(feedbackRecord.getCustomerName());
@@ -52,15 +56,14 @@ public class FeedbackViewController {
 
         return "feedback-form"; // Return the feedback form view
     }
-    @RequestMapping(value = "/feedback-form/{formId}/{contactNo}", method = RequestMethod.POST)
+    @RequestMapping(value = "/feedback-form/{formId}", method = RequestMethod.POST)
     public String submitFeedback(
             @PathVariable String formId,
-            @PathVariable String contactNo,
             @ModelAttribute UserFeedbackResponse feedback,
             BindingResult result,
             Model model) {
 
-        service.submitFeedback(formId, contactNo, feedback);
+        service.submitFeedback(formId, feedback);
         return "thank-you";
     }
 

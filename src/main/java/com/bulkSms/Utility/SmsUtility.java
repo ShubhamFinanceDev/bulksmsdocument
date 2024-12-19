@@ -95,7 +95,7 @@ public class SmsUtility {
             smsBody=  soaQuarterly + kitBaseurl + key+"@"+smsSendDetails.getFileSequenceNo();
 
         } else if (smsSendDetails.getCertificateCategory().equals("feedback")) {
-            smsBody = feedbackMessage + submitFeedbackUrl + "/" + smsSendDetails.getFileSequenceNo() + "/" + smsSendDetails.getMobileNumber();
+            smsBody = feedbackMessage + submitFeedbackUrl + "/" + encodingUtils.encode(String.valueOf(smsSendDetails.getFileSequenceNo()));
             smsBody += "\nWe+will+use+your+feedback+to+further+improve+our+service.%0aThank+you.%0aShubham+Housing";
         }
         return smsBody;
