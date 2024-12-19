@@ -38,4 +38,6 @@ public interface Service {
     void submitFeedback(String formId, UserFeedbackResponse feedback);
 
     InputStream generateExcelFile();
+
+    ResponseEntity<?> returnJobAudit();
 }

@@ -593,5 +593,21 @@ public class ServiceImpl implements Service {
         return feedbackRepo.findByFormId(formId);
     }
 
+    public ResponseEntity<?> returnJobAudit(){
+        JobAuditResponse jobAuditResponse = new JobAuditResponse();
+        try {
+            List<JobAuditTrail> sortedList = jobAuditTrailRepo.findByJobName("Upload-file").stream()
+                    .sorted(Comparator.comparing(JobAuditTrail::getJobId).reversed())
+                    .limit(10)
+                    .collect(Collectors.toList());
 
+            jobAuditResponse.setMsg("Data found successfully");
+            jobAuditResponse.setJobAuditTrailList(sortedList);
+            return ResponseEntity.status(HttpStatus.OK).body(jobAuditResponse);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            jobAuditResponse.setMsg("Exception found :"+e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(jobAuditResponse);
+        }
+    }
 }

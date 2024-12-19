@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Repository
 @Transactional
@@ -20,4 +21,7 @@ public interface JobAuditTrailRepo extends JpaRepository<JobAuditTrail,Long> {
     @Modifying
     @Query("update JobAuditTrail j set j.status = :status, j.endDate = :endDate, j.message = :message where j.jobId = :jobId")
     void updateIfException(String message, String status, Timestamp endDate, Long jobId);
+
+    @Query("select n from JobAuditTrail n where n.jobName = :jobName")
+    List<JobAuditTrail> findByJobName(String jobName);
 }

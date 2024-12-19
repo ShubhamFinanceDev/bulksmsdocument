@@ -112,4 +112,9 @@ public class Admin {
             throw new Exception(e.getMessage());
         }
     }
+
+    @GetMapping("/get-job-audit-trail")
+    public ResponseEntity<?> getJobAudit(){
+        return service.returnJobAudit();
+    }
 }
