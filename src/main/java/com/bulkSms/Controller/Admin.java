@@ -114,7 +114,7 @@ public class Admin {
         }
     }
 
-    @GetMapping("/get-job-audit-trail")
+    @GetMapping("/job-status")
     public ResponseEntity<?> getJobAudit(){
         return service.returnJobAudit();
     }
