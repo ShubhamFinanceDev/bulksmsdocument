@@ -70,7 +70,8 @@ public class Admin {
         // Sanitize user input to prevent XSS in logs or downstream processes
         pdfUrl = sanitizeInput(pdfUrl);
         category = sanitizeInput(category);
-        return service.fetchPdf(pdfUrl,category);
+        service.fetchPdf(pdfUrl,category);
+        return ResponseEntity.ok("Merged process invoked");
     }
 
     @GetMapping("/sms-process")

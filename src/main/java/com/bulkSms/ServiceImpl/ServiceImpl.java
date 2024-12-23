@@ -28,6 +28,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -96,11 +97,12 @@ public class ServiceImpl implements Service {
     }
 
     @Transactional
+    @Async
     public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
-        jobAuditTrail.setJobName("Upload-file");
+        jobAuditTrail.setJobName("Merge-file");
         jobAuditTrail.setStatus("in_progress");
         jobAuditTrail.setStartDate(Timestamp.valueOf(LocalDateTime.now()));
         jobAuditTrailRepo.save(jobAuditTrail);
@@ -163,7 +165,7 @@ public class ServiceImpl implements Service {
                 }
 
             }
-            jobAuditTrailRepo.updateEndStatus("Number of files saved: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
+            jobAuditTrailRepo.updateEndStatus("Number of files: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
             setJobResponse(response, jobAuditTrail.getJobId(), commonResponse, count);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -596,7 +598,7 @@ public class ServiceImpl implements Service {
     public ResponseEntity<?> returnJobAudit(){
         JobAuditResponse jobAuditResponse = new JobAuditResponse();
         try {
-            List<JobAuditTrail> sortedList = jobAuditTrailRepo.findByJobName("Upload-file").stream()
+            List<JobAuditTrail> sortedList = jobAuditTrailRepo.findByJobName("Merge-file").stream()
                     .sorted(Comparator.comparing(JobAuditTrail::getJobId).reversed())
                     .limit(10)
                     .collect(Collectors.toList());
