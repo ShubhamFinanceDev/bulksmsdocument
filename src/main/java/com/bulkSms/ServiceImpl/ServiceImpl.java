@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -98,7 +99,7 @@ public class ServiceImpl implements Service {
 
     @Transactional
     @Async
-    public ResponseEntity<?> fetchPdf(String folderPath, String category) throws IOException {
+    public void fetchPdf(String folderPath, String category) throws IOException {
         CommonResponse commonResponse = new CommonResponse();
         ResponseOfFetchPdf response = new ResponseOfFetchPdf();
         JobAuditTrail jobAuditTrail = new JobAuditTrail();
@@ -141,7 +142,7 @@ public class ServiceImpl implements Service {
                         }
                        else {
                             commonResponse.setMsg("Pdf not found.");
-                            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+//                            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
                         }
 
                     }
@@ -161,18 +162,18 @@ public class ServiceImpl implements Service {
                     }
                 } else {
                     commonResponse.setMsg("Pdf not found.");
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
+//                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(commonResponse);
                 }
 
             }
             jobAuditTrailRepo.updateEndStatus("Number of files: " + count, "complete", Timestamp.valueOf(LocalDateTime.now()), jobAuditTrail.getJobId());
             setJobResponse(response, jobAuditTrail.getJobId(), commonResponse, count);
-            return ResponseEntity.ok(response);
+//            return ResponseEntity.ok(response);
         } catch (Exception e) {
             handleException(e, commonResponse, jobAuditTrail);
         }
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponse);
     }
 
     private DocumentDetails createDocumentDetails(JobAuditTrail jobAuditTrail, String fileName, String category, Long fileSequence) {
@@ -201,7 +202,7 @@ public class ServiceImpl implements Service {
     private void setJobResponse(ResponseOfFetchPdf response, Long jobId, CommonResponse commonResponse, long count) {
         commonResponse.setMsg("All PDF files copied successfully.");
         response.setCommonResponse(commonResponse);
-        response.setDownloadCount(count);
+//        response.setDownloadCount(count);
         Pageable pageable = PageRequest.of(0, 1000);
 
         List<DocumentDetails> latestCopedFile = documentDetailsRepo.finByJobId(jobId, pageable);
@@ -214,7 +215,7 @@ public class ServiceImpl implements Service {
             listResponse.setCategory(reader.getCategory());
             readerList.add(listResponse);
         }
-        response.setListOfPdfNames(readerList);
+//        response.setListOfPdfNames(readerList);
     }
 
 

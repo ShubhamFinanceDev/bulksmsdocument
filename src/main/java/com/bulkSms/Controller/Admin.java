@@ -1,6 +1,7 @@
 package com.bulkSms.Controller;
 
 import com.bulkSms.Model.RegistrationDetails;
+import com.bulkSms.Model.ResponseOfFetchPdf;
 import com.bulkSms.Model.SmsResponse;
 import com.bulkSms.Service.Service;
 import jakarta.validation.constraints.NotNull;
@@ -65,13 +66,16 @@ public class Admin {
     }
 
     @GetMapping("/fetch-pdf")
-    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") @NotNull String pdfUrl ,
-                                                    @RequestParam(name="category") @NotNull String category) throws IOException {
+    public ResponseEntity<?> pdfFetcherFromLocation(@RequestParam(name = "pdfUrl") @NotNull String pdfUrl ,@RequestParam(name="category") @NotNull String category) throws IOException {
+        ResponseOfFetchPdf response = new ResponseOfFetchPdf();
+        CommonResponse commonResponse = new CommonResponse();
         // Sanitize user input to prevent XSS in logs or downstream processes
         pdfUrl = sanitizeInput(pdfUrl);
         category = sanitizeInput(category);
         service.fetchPdf(pdfUrl,category);
-        return ResponseEntity.ok("Merged process invoked");
+        commonResponse.setMsg("Merged process invoked");
+        response.setCommonResponse(commonResponse);
+        return ResponseEntity.ok().body(response);
     }
 
     @GetMapping("/sms-process")

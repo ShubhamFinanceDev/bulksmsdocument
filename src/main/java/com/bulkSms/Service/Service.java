@@ -13,9 +13,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface Service {
-    ResponseEntity<?> fetchPdf(String pdfUrl,String category) throws IOException;
+    void fetchPdf(String pdfUrl, String category) throws IOException;
 
     ResponseEntity<CommonResponse> csvFileUploadSave(MultipartFile file) throws Exception;
 
