@@ -68,7 +68,7 @@ public class FeedbackUtility {
 
 
     @Scheduled(cron = "0 0/30 10-17 * * *")
-    public FeedbackResponse getFeedBack(String mobileNo,Long formId) {
+    public FeedbackResponse getFeedBack() {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
         List<FeedbackRecord> feedbackRecords = new ArrayList<>();

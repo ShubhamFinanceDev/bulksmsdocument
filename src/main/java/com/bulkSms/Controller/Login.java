@@ -122,13 +122,13 @@ public class Login {
         }
     }
 
-    @GetMapping("/send-feedback-sms")
-
-      public  String sendSms(@RequestParam String mobileNumber,@RequestParam long formId)
-    {
-        feedbackUtility.getFeedBack(mobileNumber,formId);
-        return "success";
-    }
+//    @GetMapping("/send-feedback-sms")
+//
+//      public  String sendSms(@RequestParam String mobileNumber,@RequestParam long formId)
+//    {
+//        feedbackUtility.getFeedBack(mobileNumber,formId);
+//        return "success";
+//    }
 
 
 }
