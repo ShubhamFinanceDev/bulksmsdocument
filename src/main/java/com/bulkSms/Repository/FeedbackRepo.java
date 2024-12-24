@@ -12,4 +12,7 @@ public interface FeedbackRepo extends JpaRepository<FeedbackRecord,Long>
             "ORDER BY f.date DESC   LIMIT 1",
             nativeQuery = true)
     FeedbackRecord findByFormId(String formId);
+
+    @Query("SELECT COUNT(fr) > 0 FROM FeedbackRecord fr WHERE fr.formId = :formId")
+    boolean existsByFormId(String formId);
 }
