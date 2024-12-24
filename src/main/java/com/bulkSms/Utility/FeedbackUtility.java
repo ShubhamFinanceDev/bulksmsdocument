@@ -19,6 +19,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -64,10 +67,11 @@ public class FeedbackUtility {
     private SmsUtility smsUtility;
 
 
-//        @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0/30 10-17 * * *")
     public FeedbackResponse getFeedBack(String mobileNo,Long formId) {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        List<FeedbackRecord> feedbackRecords = new ArrayList<>();
 
         try {
             String url = String.format("%s?apikey=%s&formname=%s&operation=%s&pageno=%s&numofrecords=%s&sortcolumn=%s&sortorder=%s&isnull=%s&templatename=%s&searchcondition=%s",
@@ -87,40 +91,50 @@ public class FeedbackUtility {
                 ObjectMapper objectMapper = new ObjectMapper();
                 FeedbackResponse feedbackResponse = objectMapper.readValue(responseBody, FeedbackResponse.class);
 
-                // Save each entry in the database
-//                for (Map<String, Object> entry : feedbackResponse.getData()) {
-//                    String formId = (String) entry.get("Form ID");
-//                    String contactNo = (String) entry.get("Contact No 1");
-//
-//                    if (formId != null && contactNo != null) {
-//                        //send feedback message including link
-////                        smsUtility.sendFeedbackFormToUser(formId,contactNo);
-//                        FeedbackRecord feedbackRecord = new FeedbackRecord();
-//                        feedbackRecord.setFormId(formId);
-//                        feedbackRecord.setContactNo(contactNo);
-//                        feedbackRecord.setFeedbackSendFlag("Y");
-//                        feedbackRepo.save(feedbackRecord);
-//                    }
-//                }
-//                long formId = 745935;
-                String contactNo = mobileNo;
-                String loanNo = "APPLl000123";
-                String customerName = "Nainish SIngh";
-                GetDataForSendSms data = new GetDataForSendSms();
-                data.setLoanNumber(loanNo);
-                data.setCertificateCategory("feedback");
-                data.setMobileNumber(contactNo);
-                data.setFileSequenceNo(formId);
-                FeedbackRecord feedbackRecord = new FeedbackRecord();
-                feedbackRecord.setFormId(formId);
-                feedbackRecord.setContactNo(contactNo);
-                feedbackRecord.setFeedbackSendFlag("Y");
-                feedbackRecord.setFeedbackSubmitFlag("N");
-                feedbackRecord.setLoanNo(loanNo);
-                feedbackRecord.setCustomerName(customerName);
-                feedbackRepo.save(feedbackRecord);
-                smsUtility.sendTextMsgToUser(data);
-                log.info("Data saved to database successfully.");
+                String size = String.valueOf(feedbackResponse.getResponserows());
+
+//                // Save each entry in the database
+                for (Map<String, Object> entry : feedbackResponse.getData()) {
+                    String formId = (String) entry.get("Form ID");
+                    String contactNo = (String) entry.get("Contact No 1");
+                    String loanNo = (String) entry.get("Application No");
+                    String customerFirstName = (String) entry.get("First Name");
+
+                    if (formId != null && contactNo != null && !loanNo.equalsIgnoreCase("NA")) {
+                        boolean formIdExists = feedbackRepo.existsByFormId(formId);
+
+                        if (!formIdExists) {
+
+                            FeedbackRecord feedbackRecord = new FeedbackRecord();
+                            feedbackRecord.setFormId(Long.valueOf(formId));
+                            feedbackRecord.setContactNo(contactNo);
+                            feedbackRecord.setLoanNo(loanNo);
+                            feedbackRecord.setCustomerName(customerFirstName);
+                            feedbackRecord.setFeedbackSendFlag("Y");
+                            feedbackRecord.setFeedbackSubmitFlag("N");
+                            feedbackRepo.save(feedbackRecord);
+                            feedbackRecords.add(feedbackRecord);
+
+//                            if you want to use the feedback sms functionality then uncomment from line 121 to 127
+
+
+//                            GetDataForSendSms data = new GetDataForSendSms();
+//                            data.setLoanNumber(loanNo);
+//                            data.setCertificateCategory("feedback");
+//                            data.setMobileNumber(contactNo);
+//                            data.setFileSequenceNo(formId);
+
+//                          smsUtility.sendTextMsgToUser(data);
+                        } else {
+                            log.info("This Form ID already exists: " + formId);
+                        }
+                    }
+
+                }
+                log.info("total data size from 3rd party api : {}", size);
+                log.info("size of records saved in db : {}", feedbackRecords.size());
+                log.info("records that are saved in db : {}", feedbackRecords );
+
                 return feedbackResponse;
             } else {
                 log.error("Unexpected response status: {}", response.getStatusCode());
